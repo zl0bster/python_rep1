@@ -34,8 +34,8 @@ bubble_radius = 30
 x_resolution, y_resolution = 1200, 700
 sd.resolution = (x_resolution, y_resolution)
 
-x_speed = random.randint(speed_limit[0], speed_limit[1])
-y_speed = random.randint(speed_limit[0], speed_limit[1])
+x_speed = random.randint(*speed_limit) # star before list unpacks the arguments
+y_speed = random.randint(*speed_limit)
 x = x_resolution // 2
 y = y_resolution // 2
 collision_direction = [False, False]
