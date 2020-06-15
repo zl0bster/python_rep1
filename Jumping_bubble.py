@@ -14,7 +14,7 @@ def draw_bubble(bub_center, bub_radius=20, bub_color=sd.COLOR_YELLOW):
     ''' draws the bubble '''
     for _ in range(2):
         sd.circle(center_position=bub_center, radius=bub_radius, width=2, color=bub_color)
-        bub_radius -= 5
+        bub_radius *= 0.85
 
 
 def show_bubble(bub_center, bub_radius=20):
@@ -25,16 +25,21 @@ def show_bubble(bub_center, bub_radius=20):
 
 
 def show_bubbles_cloud(b_cloud=[]):
+    ''' draws all bubbles in list then removes them'''
     if not b_cloud:
         return
+    sd.start_drawing()    # removes  blinking
     for bubble in b_cloud:
         point = sd.get_point(bubble['x'], bubble['y'])
         draw_bubble(point, bubble['r'])
+    sd.finish_drawing()   # removes  blinking
     sd.sleep(0.05)
     # sd.clear_screen()
+    sd.start_drawing()   # removes  blinking
     for bubble in b_cloud:
         point = sd.get_point(bubble['x'], bubble['y'])
         draw_bubble(point, bubble['r'], bub_color=sd.background_color)
+    sd.finish_drawing()   # removes  blinking
     return
 
 
