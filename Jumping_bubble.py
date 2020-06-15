@@ -98,7 +98,7 @@ def bubble_init_angular(x_lim, y_lim):
                sd.COLOR_GREEN]
     color_count = len(palette) - 1
     color = random.randint(0, color_count)
-    speed_limit = (5, 20)
+    speed_limit = (5, 10)
     radius_limit = (10, 60)
     speed_value = random.randint(*speed_limit)  # star before list unpacks the arguments
     speed_direction = random.randint(0, 360)
@@ -200,11 +200,13 @@ def bubbles_collision_detected(bubble1, bubble2):
     far_distance = bubble1['r'] + bubble2['r'] + bubble1['speed_val'] + bubble2['speed_val']
     [x, y] = vectorize(point1=[bubble1['x'], bubble1['y']], point2=[bubble2['x'], bubble2['y']])
     [bubble_distance, normal1] = decart_to_angular(x, y)
+    # bubbles_approaching = ((normal1 + 0) - bubble1['speed_dir']) > 0
     if far_distance < bubble_distance:
         return None
     near_distance = bubble1['r'] + bubble2['r']
-    # if near_distance >= bubble_distance:
+    # if near_distance >= bubble_distance and not bubbles_approaching:
     #     return None
+    # if near_distance*1.05 >= bubble_distance >= near_distance*0.95:
     if near_distance >= bubble_distance:
         return normal1
 
@@ -269,7 +271,7 @@ else:
                 sd.quit()
                 break
         for i in range(0, bubbles_count - 2):
-            for j in range(i+1, bubbles_count - 1):
+            for j in range(i + 1, bubbles_count - 1):
                 normal = bubbles_collision_detected(bubbles_cloud[i], bubbles_cloud[j])
                 if not normal:
                     continue
