@@ -31,7 +31,10 @@ def show_bubbles_cloud(b_cloud=[]):
         point = sd.get_point(bubble['x'], bubble['y'])
         draw_bubble(point, bubble['r'])
     sd.sleep(0.05)
-    sd.clear_screen()
+    # sd.clear_screen()
+    for bubble in b_cloud:
+        point = sd.get_point(bubble['x'], bubble['y'])
+        draw_bubble(point, bubble['r'], bub_color=sd.background_color)
     return
 
 
@@ -47,32 +50,22 @@ def collision_detected1(bubble=[], range=[]):
     return (x_result, y_result)
 
 
-def collision_detected(position, range, speed, radius):
-    ''' checks the collision of bubble with window ranges '''
-    x_result, y_result = True, True
-    x_distance = (radius + abs(speed[0]))
-    y_distance = (radius + abs(speed[1]))
-    if x_distance <= position[0] <= (range[0] - x_distance):
-        x_result = False
-    if y_distance <= position[1] <= (range[1] - y_distance):
-        y_result = False
-    return (x_result, y_result)
-
-
 def bubble_init(x_lim, y_lim):
+    ''' define start position, speed and radius for bubble in window'''
     speed_limit = (5, 20)
     radius_limit = (10, 60)
     x_speed = random.randint(*speed_limit)  # star before list unpacks the arguments
     y_speed = random.randint(*speed_limit)
     radius = random.randint(*radius_limit)
-    x = random.randint(radius + 1, x_lim - radius - 1)
-    y = random.randint(radius + 1, y_lim - radius - 1)
+    x = random.randint(radius + speed_limit[1], x_lim - speed_limit[1])
+    y = random.randint(radius + speed_limit[1], y_lim - radius - speed_limit[1])
     bub_data = {'x': x,
                 'y': y,
                 'x_speed': x_speed,
                 'y_speed': y_speed,
                 'r': radius}
     return bub_data
+
 
 ''' initialize screen and bubbles 
     start the main program'''
@@ -85,7 +78,7 @@ bubble_data = {'x': 0,
                'y_speed': 0,
                'r': 0}
 bubbles_cloud = []
-bubbles_count = 8
+bubbles_count = 20
 
 # bubbles data creation
 for i in range(0, bubbles_count):
