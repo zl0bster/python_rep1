@@ -7,6 +7,8 @@
 #
 import random
 
+import math
+
 import simple_draw as sd
 
 
@@ -32,16 +34,10 @@ def show_bubbles_cloud(b_cloud=[]):
     sd.start_drawing()  # removes  blinking
     for bubble in b_cloud:
         point = sd.get_point(bubble['x'], bubble['y'])
-        draw_bubble(point, bubble['r'])
+        draw_bubble(point, bubble['r'], bub_color=bubble['col'])
     sd.finish_drawing()  # removes  blinking
     sd.sleep(0.05)
     sd.draw_background()
-    # sd.clear_screen()
-    # sd.start_drawing()   # removes  blinking
-    # for bubble in b_cloud:
-    #     point = sd.get_point(bubble['x'], bubble['y'])
-    #     draw_bubble(point, bubble['r'], bub_color=sd.background_color)
-    # sd.finish_drawing()   # removes  blinking
     return
 
 
@@ -59,6 +55,12 @@ def collision_detected1(bubble=[], range=[]):
 
 def bubble_init(x_lim, y_lim):
     ''' define start position, speed and radius for bubble in window'''
+    palette = [sd.COLOR_YELLOW,
+               sd.COLOR_RED,
+               sd.COLOR_CYAN,
+               sd.COLOR_GREEN]
+    color_count = len(palette) - 1
+    color = random.randint(0, color_count)
     speed_limit = (5, 20)
     radius_limit = (10, 60)
     x_speed = random.randint(*speed_limit)  # star before list unpacks the arguments
@@ -70,7 +72,8 @@ def bubble_init(x_lim, y_lim):
                 'y': y,
                 'x_speed': x_speed,
                 'y_speed': y_speed,
-                'r': radius}
+                'r': radius,
+                'col': palette[color]}
     return bub_data
 
 
@@ -78,13 +81,24 @@ def bubble_init(x_lim, y_lim):
 '''-----------------------------------------'''
 
 
-def draw_branch(point, angle, length, color):
+#
+# pip install simple_draw
+#
+
+def draw_branch(point,
+                angle,
+                length,
+                color):
     branch = sd.get_vector(start_point=point, angle=angle, length=length, )
     branch.draw(color=color)
     return branch.end_point
 
 
-def draw_fork(point, angle, tilt, length, color):
+def draw_fork(point,
+              angle,
+              tilt,
+              length,
+              color):
     angle1 = angle + tilt
     angle2 = angle - tilt
     vertex1 = draw_branch(point, angle1, length, color)
@@ -92,7 +106,12 @@ def draw_fork(point, angle, tilt, length, color):
     return ([vertex1, angle1], [vertex2, angle2])
 
 
-def fractal_tree(point, length=100, direction=90, tilt=30, scale=0.6, color=sd.COLOR_DARK_GREEN):
+def fractal_tree(point,
+                 length=100,
+                 direction=90,
+                 tilt=30,
+                 scale=0.6,
+                 color=sd.COLOR_DARK_GREEN):
     vertexes = draw_fork(point, direction, tilt, length, color)
     while length > 10:
         length *= scale
@@ -100,24 +119,46 @@ def fractal_tree(point, length=100, direction=90, tilt=30, scale=0.6, color=sd.C
             fractal_tree(points[0], length, points[1], tilt, scale, color)
     return
 
+''' here is the angular module text'''
+'''-----------------------------------------'''
+
+def angular_to_decart(distance, angle):
+    x = distance * sd.cos(angle)
+    y = distance * sd.sin(angle)
+    return (x, y)
+
+
+def decart_to_angular(x, y):
+    distance = (x * x + y * y) ** 0.5
+    angle = math.degrees(math.atan(x / y))
+    return (distance, angle)
+
+
+def vectorize(point1=[], point2=[]):
+    x = point2[0] - point1[0]
+    y = point2[1] - point1[1]
+    return (x, y)
+
+def bounce_angle(normal, angle):
+    return (normal+(normal-angle))
+
 
 ''' initialize screen and bubbles 
     start the main program'''
 x_resolution, y_resolution = 1200, 700
 sd.resolution = (x_resolution, y_resolution)
 
-bubble_data = {'x': 0,
-               'y': 0,
-               'x_speed': 0,
-               'y_speed': 0,
-               'r': 0}
+# bubble_data = {'x': 0,
+#                'y': 0,
+#                'x_speed': 0,
+#                'y_speed': 0,
+#                'r': 0}
 bubbles_cloud = []
 bubbles_count = 30
-tree_root = sd.get_point(x_resolution / 2, 100)
+# tree_root = sd.get_point(x_resolution / 2, 100)
 
-fractal_tree(tree_root, 200, 50, 15, 0.5,)
-fractal_tree(tree_root, 150, 120, 30, 0.7, sd.COLOR_DARK_ORANGE)
-
+fractal_tree(sd.get_point(800, 500), 200, 275, 40, 0.6, )
+fractal_tree(sd.get_point(500, 200), 150, 120, 30, 0.65, sd.COLOR_DARK_ORANGE)
 
 # bubbles data creation
 for i in range(0, bubbles_count):
