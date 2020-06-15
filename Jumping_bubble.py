@@ -57,7 +57,7 @@ def bubble_init(x_lim, y_lim):
     x_speed = random.randint(*speed_limit)  # star before list unpacks the arguments
     y_speed = random.randint(*speed_limit)
     radius = random.randint(*radius_limit)
-    x = random.randint(radius + speed_limit[1], x_lim - speed_limit[1])
+    x = random.randint(radius + speed_limit[1], x_lim - radius - speed_limit[1])
     y = random.randint(radius + speed_limit[1], y_lim - radius - speed_limit[1])
     bub_data = {'x': x,
                 'y': y,
@@ -78,7 +78,7 @@ bubble_data = {'x': 0,
                'y_speed': 0,
                'r': 0}
 bubbles_cloud = []
-bubbles_count = 20
+bubbles_count = 30
 
 # bubbles data creation
 for i in range(0, bubbles_count):
