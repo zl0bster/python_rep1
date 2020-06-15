@@ -11,14 +11,21 @@ import simple_draw as sd
 
 
 def draw_bubble(bub_center, bub_radius=20):
+    ''' draws the bubble then removes it by background color'''
+    br_temp = bub_radius
     for _ in range(2):
         sd.circle(center_position=bub_center, radius=bub_radius, width=2)
         bub_radius -= 5
     sd.sleep(0.05)
-    sd.clear_screen()
+    # sd.clear_screen()
+    bub_radius = br_temp
+    for _ in range(2):
+        sd.circle(center_position=bub_center, radius=bub_radius, width=2, color=sd.background_color)
+        bub_radius -= 5
 
 
 def collision_detected(position, range, speed, radius):
+    ''' checks the collision of bubble with window ranges '''
     x_result, y_result = True, True
     x_distance = (radius + abs(speed[0]))
     y_distance = (radius + abs(speed[1]))
@@ -34,7 +41,7 @@ bubble_radius = 30
 x_resolution, y_resolution = 1200, 700
 sd.resolution = (x_resolution, y_resolution)
 
-x_speed = random.randint(*speed_limit) # star before list unpacks the arguments
+x_speed = random.randint(*speed_limit)  # star before list unpacks the arguments
 y_speed = random.randint(*speed_limit)
 x = x_resolution // 2
 y = y_resolution // 2
