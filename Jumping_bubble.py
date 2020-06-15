@@ -162,14 +162,20 @@ def fractal_tree(point,
 
 
 def angular_to_decart(distance, angle):
-    x = distance * sd.cos(angle)
-    y = distance * sd.sin(angle)
+    x = int(distance * sd.cos(angle))
+    y = int(distance * sd.sin(angle))
     return (x, y)
 
 
 def decart_to_angular(x, y):
+    if x == 0 and y == 0:
+        print('wrong decart arguments', x, y)
+        return None
     distance = (x * x + y * y) ** 0.5
-    angle = math.degrees(math.atan(x / y))
+    if y != 0:
+        angle = math.degrees(math.atan(x / y))
+    else:
+        angle = math.degrees(math.acos(x / distance))
     return (distance, angle)
 
 
@@ -181,6 +187,26 @@ def vectorize(point1=[], point2=[]):
 
 def bounce_angle(normal, angle):
     return (normal + (normal - angle))
+
+    # bub_data = {'x': x,
+    #             'y': y,
+    #             'speed_val': speed_value,
+    #             'speed_dir': speed_direction,
+    #             'r': radius,
+    #             # 'col': palette[color]}
+
+
+def bubbles_collision_detected(bubble1, bubble2):
+    far_distance = bubble1['r'] + bubble2['r'] + bubble1['speed_val'] + bubble2['speed_val']
+    [x, y] = vectorize(point1=[bubble1['x'], bubble1['y']], point2=[bubble2['x'], bubble2['y']])
+    [bubble_distance, normal1] = decart_to_angular(x, y)
+    if far_distance < bubble_distance:
+        return None
+    near_distance = bubble1['r'] + bubble2['r']
+    # if near_distance >= bubble_distance:
+    #     return None
+    if near_distance >= bubble_distance:
+        return normal1
 
 
 ''' initialize screen and bubbles 
@@ -242,3 +268,10 @@ else:
             if sd.user_want_exit():
                 sd.quit()
                 break
+        for i in range(0, bubbles_count - 2):
+            for j in range(i+1, bubbles_count - 1):
+                normal = bubbles_collision_detected(bubbles_cloud[i], bubbles_cloud[j])
+                if not normal:
+                    continue
+                bubbles_cloud[i]['speed_dir'] = bounce_angle(normal, bubbles_cloud[i]['speed_dir'])
+                bubbles_cloud[j]['speed_dir'] = bounce_angle(normal, bubbles_cloud[j]['speed_dir'])
