@@ -28,18 +28,20 @@ def show_bubbles_cloud(b_cloud=[]):
     ''' draws all bubbles in list then removes them'''
     if not b_cloud:
         return
-    sd.start_drawing()    # removes  blinking
+    sd.take_background()
+    sd.start_drawing()  # removes  blinking
     for bubble in b_cloud:
         point = sd.get_point(bubble['x'], bubble['y'])
         draw_bubble(point, bubble['r'])
-    sd.finish_drawing()   # removes  blinking
+    sd.finish_drawing()  # removes  blinking
     sd.sleep(0.05)
+    sd.draw_background()
     # sd.clear_screen()
-    sd.start_drawing()   # removes  blinking
-    for bubble in b_cloud:
-        point = sd.get_point(bubble['x'], bubble['y'])
-        draw_bubble(point, bubble['r'], bub_color=sd.background_color)
-    sd.finish_drawing()   # removes  blinking
+    # sd.start_drawing()   # removes  blinking
+    # for bubble in b_cloud:
+    #     point = sd.get_point(bubble['x'], bubble['y'])
+    #     draw_bubble(point, bubble['r'], bub_color=sd.background_color)
+    # sd.finish_drawing()   # removes  blinking
     return
 
 
@@ -72,6 +74,33 @@ def bubble_init(x_lim, y_lim):
     return bub_data
 
 
+''' here is the fractal tree module text'''
+'''-----------------------------------------'''
+
+
+def draw_branch(point, angle, length, color):
+    branch = sd.get_vector(start_point=point, angle=angle, length=length, )
+    branch.draw(color=color)
+    return branch.end_point
+
+
+def draw_fork(point, angle, tilt, length, color):
+    angle1 = angle + tilt
+    angle2 = angle - tilt
+    vertex1 = draw_branch(point, angle1, length, color)
+    vertex2 = draw_branch(point, angle2, length, color)
+    return ([vertex1, angle1], [vertex2, angle2])
+
+
+def fractal_tree(point, length=100, direction=90, tilt=30, scale=0.6, color=sd.COLOR_DARK_GREEN):
+    vertexes = draw_fork(point, direction, tilt, length, color)
+    while length > 10:
+        length *= scale
+        for points in vertexes:
+            fractal_tree(points[0], length, points[1], tilt, scale, color)
+    return
+
+
 ''' initialize screen and bubbles 
     start the main program'''
 x_resolution, y_resolution = 1200, 700
@@ -84,6 +113,11 @@ bubble_data = {'x': 0,
                'r': 0}
 bubbles_cloud = []
 bubbles_count = 30
+tree_root = sd.get_point(x_resolution / 2, 100)
+
+fractal_tree(tree_root, 200, 50, 15, 0.5,)
+fractal_tree(tree_root, 150, 120, 30, 0.7, sd.COLOR_DARK_ORANGE)
+
 
 # bubbles data creation
 for i in range(0, bubbles_count):
