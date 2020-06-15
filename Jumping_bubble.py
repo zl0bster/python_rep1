@@ -53,6 +53,19 @@ def collision_detected1(bubble=[], range=[]):
     return (x_result, y_result)
 
 
+def collision_detected_angular(bubble=[], range=[]):
+    ''' checks the collision of bubble with window ranges '''
+    x_result, y_result = True, True
+    [x_speed, y_speed] = angular_to_decart(bubble['speed_val'], bubble['speed_dir'])
+    x_distance = (bubble['r'] + abs(x_speed))
+    y_distance = (bubble['r'] + abs(y_speed))
+    if x_distance <= bubble['x'] <= (range[0] - x_distance):
+        x_result = False
+    if y_distance <= bubble['y'] <= (range[1] - y_distance):
+        y_result = False
+    return (x_result, y_result)
+
+
 def bubble_init(x_lim, y_lim):
     ''' define start position, speed and radius for bubble in window'''
     palette = [sd.COLOR_YELLOW,
@@ -72,6 +85,30 @@ def bubble_init(x_lim, y_lim):
                 'y': y,
                 'x_speed': x_speed,
                 'y_speed': y_speed,
+                'r': radius,
+                'col': palette[color]}
+    return bub_data
+
+
+def bubble_init_angular(x_lim, y_lim):
+    ''' define start position, speed and radius for bubble in window'''
+    palette = [sd.COLOR_YELLOW,
+               sd.COLOR_RED,
+               sd.COLOR_CYAN,
+               sd.COLOR_GREEN]
+    color_count = len(palette) - 1
+    color = random.randint(0, color_count)
+    speed_limit = (5, 20)
+    radius_limit = (10, 60)
+    speed_value = random.randint(*speed_limit)  # star before list unpacks the arguments
+    speed_direction = random.randint(0, 360)
+    radius = random.randint(*radius_limit)
+    x = random.randint(radius + speed_limit[1], x_lim - radius - speed_limit[1])
+    y = random.randint(radius + speed_limit[1], y_lim - radius - speed_limit[1])
+    bub_data = {'x': x,
+                'y': y,
+                'speed_val': speed_value,
+                'speed_dir': speed_direction,
                 'r': radius,
                 'col': palette[color]}
     return bub_data
@@ -119,8 +156,10 @@ def fractal_tree(point,
             fractal_tree(points[0], length, points[1], tilt, scale, color)
     return
 
+
 ''' here is the angular module text'''
 '''-----------------------------------------'''
+
 
 def angular_to_decart(distance, angle):
     x = distance * sd.cos(angle)
@@ -139,14 +178,16 @@ def vectorize(point1=[], point2=[]):
     y = point2[1] - point1[1]
     return (x, y)
 
+
 def bounce_angle(normal, angle):
-    return (normal+(normal-angle))
+    return (normal + (normal - angle))
 
 
 ''' initialize screen and bubbles 
     start the main program'''
 x_resolution, y_resolution = 1200, 700
 sd.resolution = (x_resolution, y_resolution)
+angular_type = 1
 
 # bubble_data = {'x': 0,
 #                'y': 0,
@@ -161,22 +202,43 @@ fractal_tree(sd.get_point(800, 500), 200, 275, 40, 0.6, )
 fractal_tree(sd.get_point(500, 200), 150, 120, 30, 0.65, sd.COLOR_DARK_ORANGE)
 
 # bubbles data creation
-for i in range(0, bubbles_count):
-    bubbles_cloud.append(bubble_init(x_resolution, y_resolution))
+if not angular_type:
+    for i in range(0, bubbles_count):
+        bubbles_cloud.append(bubble_init(x_resolution, y_resolution))
+else:
+    for i in range(0, bubbles_count):
+        bubbles_cloud.append(bubble_init_angular(x_resolution, y_resolution))
 
 collision_direction = [False, False]
-while 1:
-    show_bubbles_cloud(bubbles_cloud)
-    for bubble in bubbles_cloud:
-        bubble['x'] += bubble['x_speed']
-        bubble['y'] += bubble['y_speed']
-        collision_direction = collision_detected1(bubble, (x_resolution, y_resolution))
-        if collision_direction[0]:
-            bubble['x_speed'] *= -1
-        if collision_direction[1]:
-            bubble['y_speed'] *= -1
-        if sd.user_want_exit():
-            sd.quit()
-            break
+if not angular_type:
+    while 1:
+        show_bubbles_cloud(bubbles_cloud)
+        for bubble in bubbles_cloud:
+            bubble['x'] += bubble['x_speed']
+            bubble['y'] += bubble['y_speed']
+            collision_direction = collision_detected1(bubble, (x_resolution, y_resolution))
+            if collision_direction[0]:
+                bubble['x_speed'] *= -1
+            if collision_direction[1]:
+                bubble['y_speed'] *= -1
+            if sd.user_want_exit():
+                sd.quit()
+                break
+else:
+    while 1:
+        show_bubbles_cloud(bubbles_cloud)
+        for bubble in bubbles_cloud:
+            # 'speed_val': speed_value,
+            # 'speed_dir': speed_direction,
 
-# sd.pause()
+            [x_speed, y_speed] = angular_to_decart(bubble['speed_val'], bubble['speed_dir'])
+            bubble['x'] += x_speed
+            bubble['y'] += y_speed
+            collision_direction = collision_detected_angular(bubble, (x_resolution, y_resolution))
+            if collision_direction[0]:
+                bubble['speed_dir'] = bounce_angle(90, bubble['speed_dir'])
+            if collision_direction[1]:
+                bubble['speed_dir'] = bounce_angle(0, bubble['speed_dir'])
+            if sd.user_want_exit():
+                sd.quit()
+                break
