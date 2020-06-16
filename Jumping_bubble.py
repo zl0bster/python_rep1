@@ -42,7 +42,7 @@ def show_bubbles_cloud(b_cloud=[]):
     return
 
 
-def collision_detected1(bubble=[], range=[]):
+def collision_detected_decart(bubble=[], range=[]):
     ''' checks the collision of bubble with window ranges '''
     x_result, y_result = True, True
     x_distance = (bubble['r'] + abs(bubble['x_speed']))
@@ -75,8 +75,8 @@ def bubble_init(x_lim, y_lim):
                sd.COLOR_GREEN]
     color_count = len(palette) - 1
     color = random.randint(0, color_count)
-    speed_limit = (5, 20)
-    radius_limit = (10, 60)
+    speed_limit = (5, 12)
+    radius_limit = (10, 50)
     x_speed = random.randint(*speed_limit)  # star before list unpacks the arguments
     y_speed = random.randint(*speed_limit)
     radius = random.randint(*radius_limit)
@@ -100,7 +100,7 @@ def bubble_init_angular(x_lim, y_lim):
     color_count = len(palette) - 1
     color = random.randint(0, color_count)
     speed_limit = (5, 10)
-    radius_limit = (10, 60)
+    radius_limit = (10, 50)
     speed_value = random.randint(*speed_limit)  # star before list unpacks the arguments
     speed_direction = random.randint(0, 360)
     radius = random.randint(*radius_limit)
@@ -134,17 +134,17 @@ def decart_to_angular(x, y):
         angle = math.degrees(math.atan(x / y))
     else:
         angle = math.degrees(math.acos(x / distance))
-    return (distance, angle)
+    return distance, angle
 
 
 def vectorize(point1=[], point2=[]):
     x = point2[0] - point1[0]
     y = point2[1] - point1[1]
-    return (x, y)
+    return x, y
 
 
-def bounce_angle(normal, angle):
-    return (normal + (normal - angle))
+def bounce_angle(_normal, angle):
+    return _normal + (_normal - angle)
 
     # bub_data = {'x': x,
     #             'y': y,
@@ -202,7 +202,7 @@ if not angular_type:  # so it works as decart type
         for bubble in bubbles_cloud:
             bubble['x'] += bubble['x_speed']
             bubble['y'] += bubble['y_speed']
-            collision_direction = collision_detected1(bubble, (x_resolution, y_resolution))
+            collision_direction = collision_detected_decart(bubble, (x_resolution, y_resolution))
             if collision_direction[0]:
                 bubble['x_speed'] *= -1
             if collision_direction[1]:
@@ -230,6 +230,10 @@ else:
                 break
         for i in range(0, bubbles_count - 2):
             for j in range(i + 1, bubbles_count - 1):
+                # wall_collided1 = (True == collision_detected_angular(bubbles_cloud[i], (x_resolution, y_resolution)))
+                # wall_collided2 = (True == collision_detected_angular(bubbles_cloud[j], (x_resolution, y_resolution)))
+                # if wall_collided1 or wall_collided2:
+                #     continue
                 normal = bubbles_collision_detected(bubbles_cloud[i], bubbles_cloud[j])
                 if not normal:
                     continue
