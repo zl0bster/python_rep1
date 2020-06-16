@@ -10,6 +10,7 @@ import random
 import math
 
 import simple_draw as sd
+import fractal_tree_draw as fd
 
 
 def draw_bubble(bub_center, bub_radius=20, bub_color=sd.COLOR_YELLOW):
@@ -114,49 +115,6 @@ def bubble_init_angular(x_lim, y_lim):
     return bub_data
 
 
-''' here is the fractal tree module text'''
-'''-----------------------------------------'''
-
-
-#
-# pip install simple_draw
-#
-
-def draw_branch(point,
-                angle,
-                length,
-                color):
-    branch = sd.get_vector(start_point=point, angle=angle, length=length, )
-    branch.draw(color=color)
-    return branch.end_point
-
-
-def draw_fork(point,
-              angle,
-              tilt,
-              length,
-              color):
-    angle1 = angle + tilt
-    angle2 = angle - tilt
-    vertex1 = draw_branch(point, angle1, length, color)
-    vertex2 = draw_branch(point, angle2, length, color)
-    return ([vertex1, angle1], [vertex2, angle2])
-
-
-def fractal_tree(point,
-                 length=100,
-                 direction=90,
-                 tilt=30,
-                 scale=0.6,
-                 color=sd.COLOR_DARK_GREEN):
-    vertexes = draw_fork(point, direction, tilt, length, color)
-    while length > 10:
-        length *= scale
-        for points in vertexes:
-            fractal_tree(points[0], length, points[1], tilt, scale, color)
-    return
-
-
 ''' here is the angular module text'''
 '''-----------------------------------------'''
 
@@ -226,11 +184,11 @@ bubbles_cloud = []
 bubbles_count = 30
 # tree_root = sd.get_point(x_resolution / 2, 100)
 
-fractal_tree(sd.get_point(800, 500), 200, 275, 40, 0.6, )
-fractal_tree(sd.get_point(500, 200), 150, 120, 30, 0.65, sd.COLOR_DARK_ORANGE)
+fd.fractal_tree(sd.get_point(800, 500), 200, 275, 40, 0.6, )
+fd.fractal_tree(sd.get_point(500, 200), 150, 120, 30, 0.65, sd.COLOR_DARK_ORANGE)
 
 # bubbles data creation
-if not angular_type:
+if not angular_type:  # so it works as decart type
     for i in range(0, bubbles_count):
         bubbles_cloud.append(bubble_init(x_resolution, y_resolution))
 else:
@@ -238,7 +196,7 @@ else:
         bubbles_cloud.append(bubble_init_angular(x_resolution, y_resolution))
 
 collision_direction = [False, False]
-if not angular_type:
+if not angular_type:  # so it works as decart type
     while 1:
         show_bubbles_cloud(bubbles_cloud)
         for bubble in bubbles_cloud:
