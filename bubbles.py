@@ -46,17 +46,21 @@ class Screen:
         return None
 
     def move_mobile_items(self):
-        # TODO move all mobile items
-        pass
+        for dinObj in self.mobile_objects:
+            result = dinObj.make_movement
+        return
 
-    def manage_mobile_items_colisions(self):
+    def manage_mobile_items_collisions(self):
         # TODO check contact of all mobile items with mobile and static items
         pass
 
     def draw_items(self):
         sd.take_background()
         sd.start_drawing()  # removes  blinking
-        # TODO draw both lists - stationary and mobile items
+        for statObj in self.static_objects:
+            result = statObj.draw_item
+        for dinObj in self.mobile_objects:
+            result = dinObj.draw_item
         sd.finish_drawing()  # removes  blinking
         sd.sleep(0.05)
         sd.draw_background()
@@ -93,6 +97,11 @@ class ScreenObject:
         r270degrees = self.yRelation
         return r000degrees, r090degrees, r180degrees, r270degrees
 
+    def get_limits(self):
+        point1 = [self.xPosition, self.yPosition]
+        point2 = [self.xPosition + self.xDimension, self.yPosition + self.yDimension]
+        return point1, point2
+
     def set_color(self, color=None):
         if color:
             self.color = color
@@ -118,14 +127,80 @@ class MobileObject(ScreenObject):
     def get_speed(self):
         return self.speedValue, self.speedDirection
 
-    def set_speed(self, value=0, direction=0):
+    def set_speed(self, value: int = 0, direction: int = 0):
         self.speedValue = value if value > 0 else 0
         self.speedDirection = direction if value > 0 else 0
         return
 
     def check_contact(self, opponent: ScreenObject):
-        # TODO return True or False if contact detected
-        pass
+
+        def check_ball_block_contact(ball: Ball, block: Block) -> bool:
+            def check_ball_vertex_contact(center, vertex, radius) -> bool:
+                distance = int(da_trans.vector_length(da_trans.vectorize(point1=center, point2=vertex)))
+                if distance > radius:
+                    return False
+                return True
+
+            def check_ball_edge_contact(center, radius, linePoint1, linePoint2):
+                distance = da_trans.distance_point_line(point=center, linePoint1=linePoint1, linePoint2=linePoint2)
+                if distance > radius:
+                    return False
+                return True
+
+            contactDetected = False
+            [referencePoint, oppositePoint] = opponent.get_limits()
+            center = ball.get_position()
+            ranges = ball.get_ranges()
+            ballRadius = ranges[0]
+            blockVertex = [referencePoint,
+                           [oppositePoint[0], referencePoint[1]],
+                           oppositePoint,
+                           referencePoint[0], oppositePoint[1]]
+            if referencePoint[0] <= center[0] <= oppositePoint[0]:
+                contactDetected = (check_ball_edge_contact(center=center,
+                                                           radius=ballRadius,
+                                                           linePoint1=blockVertex[3],
+                                                           linePoint2=blockVertex[2])
+                                   or check_ball_edge_contact(center=center,
+                                                              radius=ballRadius,
+                                                              linePoint1=blockVertex[0],
+                                                              linePoint2=blockVertex[1]))
+                if contactDetected:
+                    return True
+            elif referencePoint[1] <= center[1] <= oppositePoint[1]:
+                contactDetected = (check_ball_edge_contact(center=center,
+                                                           radius=ballRadius,
+                                                           linePoint1=blockVertex[0],
+                                                           linePoint2=blockVertex[4])
+                                   or check_ball_edge_contact(center=center,
+                                                              radius=ballRadius,
+                                                              linePoint1=blockVertex[1],
+                                                              linePoint2=blockVertex[2]))
+                if contactDetected:
+                    return True
+            else:
+                for point in blockVertex:
+                    if check_ball_vertex_contact(center=center, vertex=point, radius=ballRadius):
+                        return True
+            return contactDetected
+
+        def check_ball_ball_contact(ball1: Ball, ball2: Ball) -> bool:
+            nearDistance = ball1.xRelation + ball2.xRelation
+            # farDistance = nearDistance + ball1.speedValue + ball2.speedValue
+            [x, y] = da_trans.vectorize(point1=ball1.get_position(), point2=ball2.get_position())
+            ball_distance = da_trans.vector_length(x, y)
+            # if farDistance < ball_distance:
+            #     return False
+            if nearDistance >= ball_distance:
+                return True
+            return False
+
+        if isinstance(self, Ball):
+            if isinstance(opponent, Block):
+                return check_ball_block_contact(self, opponent)
+            elif isinstance(opponent, Ball):
+                return check_ball_ball_contact(self, opponent)
+        return False
 
     def make_movement(self):
         positionRelation = da_trans.angular_to_decart(distance=self.speedValue, angle=self.speedDirection)
@@ -146,4 +221,19 @@ class Block(ScreenObject):
 
     def draw_item(self):
         sd.rectangle(left_bottom=self.referencePoint, right_top=self.oppositePoint, color=self.color, width=1)
+        return
+
+
+class Ball(MobileObject):
+    """ mobile balls with radius """
+
+    def __init__(self, reference: list, radius: int):
+        relation = [radius, radius]
+        dimensions = [radius * 2, radius * 2]
+        super().__init__(reference, relation, dimensions)
+        self.referencePoint = sd.get_point(x=self.xPosition, y=self.yPosition)
+        return
+
+    def draw_item(self):
+        sd.circle(center_position=self.referencePoint, radius=self.xRelation, color=self.color, width=self.width)
         return
