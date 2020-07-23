@@ -1,7 +1,7 @@
 import simple_draw as sd
 from win32api import GetSystemMetrics
 import fractal_tree_draw as fd
-import transform_decart_ang as da_trans
+import transform_decart_ang as tda
 import random
 
 
@@ -34,21 +34,17 @@ class Screen:
 
     def add_mobile_item(self, mov_item):
         if isinstance(mov_item, MobileObject):
-            self.mobile_objects_count += 1
             self.mobile_objects.append(mov_item)
-            return self.mobile_objects_count
         return None
 
     def add_stationary_item(self, stat_item):
         if isinstance(stat_item, ScreenObject) and not isinstance(stat_item, MobileObject):
-            self.static_objects_count += 1
             self.static_objects.append(stat_item)
-            return self.static_objects_count
         return None
 
     def move_mobile_items(self):
         for dinObj in self.mobile_objects:
-            result = dinObj.make_movement
+            dinObj.make_movement()
         return
 
     def manage_mobile_items_collisions(self):
@@ -58,7 +54,7 @@ class Screen:
                 if isContact:
                     if not mobObj.was_contact:
                         [speedValue, direction] = mobObj.get_speed
-                        direction = da_trans.reflectance_angle(normalToSurface=normalVector, angle=direction)
+                        direction = tda.reflectance_angle(normalToSurface=normalVector, angle=direction)
                         mobObj.set_contact(b=True)
                         mobObj.set_speed(value=speedValue, direction=direction)
                 else:
@@ -71,12 +67,12 @@ class Screen:
                 if isContact:
                     if not mobObj1.was_contact:
                         [speedValue, direction] = mobObj1.get_speed
-                        direction = da_trans.reflectance_angle(normalToSurface=normalVector, angle=direction)
+                        direction = tda.reflectance_angle(normalToSurface=normalVector, angle=direction)
                         mobObj1.set_contact(b=True)
                         mobObj1.set_speed(value=speedValue, direction=direction)
                     if not mobObj2.was_contact:
                         [speedValue, direction] = mobObj2.get_speed
-                        direction = da_trans.reflectance_angle(normalToSurface=normalVector, angle=direction)
+                        direction = tda.reflectance_angle(normalToSurface=normalVector, angle=direction)
                         mobObj2.set_contact(b=True)
                         mobObj2.set_speed(value=speedValue, direction=direction)
                 else:
@@ -85,12 +81,12 @@ class Screen:
         return
 
     def draw_items(self):
-        sd.take_background()
+        # sd.take_background()
         sd.start_drawing()  # removes  blinking
         for statObj in self.static_objects:
-            result = statObj.draw_item
+            statObj.draw_item()
         for dinObj in self.mobile_objects:
-            result = dinObj.draw_item
+            dinObj.draw_item()
         sd.finish_drawing()  # removes  blinking
         sd.sleep(0.05)
         sd.draw_background()
@@ -170,14 +166,13 @@ class MobileObject(ScreenObject):
         return
 
     def check_contact(self, opponent: ScreenObject):
-
         def check_ball_block_contact(ball: Ball, block: Block) -> [bool, int]:
             def check_ball_vertex_contact(centre, vertex, radius) -> bool:
-                distance = int(da_trans.vector_length(da_trans.vectorize(point1=centre, point2=vertex)))
+                distance = int(tda.vector_length(tda.vectorize(point1=centre, point2=vertex)))
                 return not (distance > radius)
 
             def check_ball_edge_contact(centre, radius, linePoint1, linePoint2):
-                distance = da_trans.distance_point_line(point=centre, linePoint1=linePoint1, linePoint2=linePoint2)
+                distance = tda.distance_point_line(point=centre, linePoint1=linePoint1, linePoint2=linePoint2)
                 return not (distance > radius)
 
             contactDetected = False
@@ -189,7 +184,7 @@ class MobileObject(ScreenObject):
             blockVertex = [referencePoint,
                            [oppositePoint[0], referencePoint[1]],
                            oppositePoint,
-                           referencePoint[0], oppositePoint[1]]
+                           [referencePoint[0], oppositePoint[1]]]
             if referencePoint[0] <= center[0] <= oppositePoint[0]:
                 contactDetected = (check_ball_edge_contact(centre=center,
                                                            radius=ballRadius,
@@ -200,8 +195,8 @@ class MobileObject(ScreenObject):
                                                               linePoint1=blockVertex[0],
                                                               linePoint2=blockVertex[1]))
                 if contactDetected:
-                    normalToSurface = da_trans.vector_angle(
-                        da_trans.vectorize(point1=blockVertex[0], point2=blockVertex[1]))
+                    normalToSurface = tda.vector_angle(
+                        tda.vectorize(point1=blockVertex[0], point2=blockVertex[1]))
                     return [True, normalToSurface]
             elif referencePoint[1] <= center[1] <= oppositePoint[1]:
                 contactDetected = (check_ball_edge_contact(centre=center,
@@ -213,40 +208,44 @@ class MobileObject(ScreenObject):
                                                               linePoint1=blockVertex[1],
                                                               linePoint2=blockVertex[2]))
                 if contactDetected:
-                    normalToSurface = da_trans.vector_angle(
-                        da_trans.vectorize(point1=blockVertex[1], point2=blockVertex[2]))
+                    normalToSurface = tda.vector_angle(
+                        tda.vectorize(point1=blockVertex[1], point2=blockVertex[2]))
                     return [True, normalToSurface]
             else:
                 for point in blockVertex:
                     if check_ball_vertex_contact(centre=center, vertex=point, radius=ballRadius):
-                        normalToSurface = da_trans.vector_angle(
-                            da_trans.vectorize(point1=center, point2=point))
+                        normalToSurface = tda.vector_angle(
+                            tda.vectorize(point1=center, point2=point))
                         return [True, normalToSurface]
             return [contactDetected, normalToSurface]
 
         def check_ball_ball_contact(ball1: Ball, ball2: Ball) -> bool:
             nearDistance = ball1.xRelation + ball2.xRelation
             # farDistance = nearDistance + ball1.speedValue + ball2.speedValue
-            [x, y] = da_trans.vectorize(point1=ball1.get_position(), point2=ball2.get_position())
-            ball_distance = da_trans.vector_length(x, y)
+            [x, y] = tda.vectorize(point1=ball1.get_position(), point2=ball2.get_position())
+            ball_distance = tda.vector_length(x, y)
             # if farDistance < ball_distance:
             #     return False
             if nearDistance >= ball_distance:
-                return True
-            return False
+                return [True, tda.vector_angle(x,y)]
+            return [False, 0]
 
         if isinstance(self, Ball):
             if isinstance(opponent, Block):
                 return check_ball_block_contact(self, opponent)
             elif isinstance(opponent, Ball):
                 return check_ball_ball_contact(self, opponent)
-        return False
+        return [False, 0]
 
     def make_movement(self):
-        positionRelation = da_trans.angular_to_decart(distance=self.speedValue, angle=self.speedDirection)
+        positionRelation = tda.angular_to_decart(distance=self.speedValue, angle=self.speedDirection)
         self.xPosition += positionRelation[0]
         self.yPosition += positionRelation[1]
         return
+
+    # def draw_item(self):
+    #     # super().draw_item()
+    #     pass
 
 
 class Block(ScreenObject):
@@ -260,11 +259,12 @@ class Block(ScreenObject):
         return
 
     def draw_item(self):
+        # super().draw_item()
         sd.rectangle(left_bottom=self.referencePoint, right_top=self.oppositePoint, color=self.color, width=1)
         return
 
 
-class Ball(MobileObject):
+class Ball(MobileObject, ScreenObject):
     """ mobile balls with radius """
 
     def __init__(self, reference: list, radius: int):
@@ -275,6 +275,7 @@ class Ball(MobileObject):
         return
 
     def draw_item(self):
+        # super().draw_item()
         sd.circle(center_position=self.referencePoint, radius=self.xRelation, color=self.color, width=self.width)
         return
 
@@ -302,10 +303,18 @@ def ball_init(x_lim, y_lim):
     return ball_data
 
 
+def ball_creation():
+    [reference, speed, radius, color] = ball_init(x_resolution, y_resolution)
+    ball1 = Ball(reference=reference, radius=radius)
+    ball1.set_speed(speed[0], speed[1])
+    ball1.set_color(color)
+    return ball1
+
+
 # =====================================================================================
 
 x_resolution, y_resolution = 1200, 700
-balls_count = 30
+balls_count = 16
 
 window = Screen(x_size=x_resolution, y_size=y_resolution)
 window.draw_screen_background()
@@ -314,10 +323,9 @@ frame.set_color(color=sd.COLOR_RED)
 frame.set_width(width=2)
 window.add_stationary_item(frame)
 
-[reference, speed, radius, color] = ball_init(x_resolution, y_resolution)
-ball1 = Ball(reference=reference,radius=radius)
-ball1.set_speed(speed[0], speed[1])
-window.add_mobile_item(ball1)
+while balls_count > 0:
+    window.add_mobile_item(ball_creation())
+    balls_count -= 1
 
 while not sd.user_want_exit():
     window.draw_items()
