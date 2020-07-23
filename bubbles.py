@@ -195,7 +195,7 @@ class MobileObject(ScreenObject):
                                                               linePoint1=blockVertex[0],
                                                               linePoint2=blockVertex[1]))
                 if contactDetected:
-                    normalToSurface = tda.vector_angle(
+                    normalToSurface = 90 + tda.vector_angle(
                         tda.vectorize(point1=blockVertex[0], point2=blockVertex[1]))
                     return [True, normalToSurface]
             elif referencePoint[1] <= center[1] <= oppositePoint[1]:
@@ -208,7 +208,7 @@ class MobileObject(ScreenObject):
                                                               linePoint1=blockVertex[1],
                                                               linePoint2=blockVertex[2]))
                 if contactDetected:
-                    normalToSurface = tda.vector_angle(
+                    normalToSurface = 90 + tda.vector_angle(
                         tda.vectorize(point1=blockVertex[1], point2=blockVertex[2]))
                     return [True, normalToSurface]
             else:
@@ -227,7 +227,7 @@ class MobileObject(ScreenObject):
             # if farDistance < ball_distance:
             #     return False
             if nearDistance >= ball_distance:
-                return [True, tda.vector_angle(x,y)]
+                return [True, tda.vector_angle(x, y)]
             return [False, 0]
 
         if isinstance(self, Ball):
@@ -271,11 +271,10 @@ class Ball(MobileObject, ScreenObject):
         relation = [radius, radius]
         dimensions = [radius * 2, radius * 2]
         super().__init__(reference, relation, dimensions)
-        self.referencePoint = sd.get_point(x=self.xPosition, y=self.yPosition)
         return
 
     def draw_item(self):
-        # super().draw_item()
+        self.referencePoint = sd.get_point(x=self.xPosition, y=self.yPosition)
         sd.circle(center_position=self.referencePoint, radius=self.xRelation, color=self.color, width=self.width)
         return
 
@@ -307,7 +306,7 @@ def ball_creation():
     [reference, speed, radius, color] = ball_init(x_resolution, y_resolution)
     ball1 = Ball(reference=reference, radius=radius)
     ball1.set_speed(speed[0], speed[1])
-    ball1.set_color(color)
+    # ball1.set_color(color)
     return ball1
 
 
