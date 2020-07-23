@@ -2,6 +2,7 @@ import simple_draw as sd
 from win32api import GetSystemMetrics
 import fractal_tree_draw as fd
 import transform_decart_ang as da_trans
+import random
 
 
 class Screen:
@@ -13,8 +14,8 @@ class Screen:
         print(f"Screen resolution = {width} x {height}")
         self.x_resolution = x_size if x_size < width else width
         self.y_resolution = y_size if y_size < height else height
-        self.mobile_objects_count = 0
-        self.static_objects_count = 0
+        # self.mobile_objects_count = 0
+        # self.static_objects_count = 0
         self.mobile_objects = []
         self.static_objects = []
         sd.resolution = (self.x_resolution, self.y_resolution)
@@ -23,11 +24,11 @@ class Screen:
         return
 
     def draw_screen_background(self):
-        fd.fractal_tree(sd.get_point(int(self.x_resolution * 0.4),
-                                     int(self.y_resolution * 0.25)),
+        fd.fractal_tree(sd.get_point(int(self.x_resolution * 0.3),
+                                     int(self.y_resolution * 0.9)),
                         200, 275, 40, 0.6, )
-        fd.fractal_tree(sd.get_point(int(self.x_resolution * 0.6),
-                                     int(self.y_resolution * 0.3)),
+        fd.fractal_tree(sd.get_point(int(self.x_resolution * 0.8),
+                                     int(self.y_resolution * 0.1)),
                         150, 120, 30, 0.65, sd.COLOR_DARK_ORANGE)
         return
 
@@ -51,8 +52,37 @@ class Screen:
         return
 
     def manage_mobile_items_collisions(self):
-        # TODO check contact of all mobile items with mobile and static items
-        pass
+        for statObj in self.static_objects:
+            for mobObj in self.mobile_objects:
+                [isContact, normalVector] = mobObj.check_contact(statObj)
+                if isContact:
+                    if not mobObj.was_contact:
+                        [speedValue, direction] = mobObj.get_speed
+                        direction = da_trans.reflectance_angle(normalToSurface=normalVector, angle=direction)
+                        mobObj.set_contact(b=True)
+                        mobObj.set_speed(value=speedValue, direction=direction)
+                else:
+                    mobObj.set_contact(b=False)
+        for i in range(0, len(self.mobile_objects) - 2):
+            for j in range(i + 1, len(self.mobile_objects) - 1):
+                mobObj1 = self.mobile_objects[i]
+                mobObj2 = self.mobile_objects[j]
+                [isContact, normalVector] = mobObj1.check_contact(mobObj2)
+                if isContact:
+                    if not mobObj1.was_contact:
+                        [speedValue, direction] = mobObj1.get_speed
+                        direction = da_trans.reflectance_angle(normalToSurface=normalVector, angle=direction)
+                        mobObj1.set_contact(b=True)
+                        mobObj1.set_speed(value=speedValue, direction=direction)
+                    if not mobObj2.was_contact:
+                        [speedValue, direction] = mobObj2.get_speed
+                        direction = da_trans.reflectance_angle(normalToSurface=normalVector, angle=direction)
+                        mobObj2.set_contact(b=True)
+                        mobObj2.set_speed(value=speedValue, direction=direction)
+                else:
+                    mobObj1.set_contact(b=False)
+                    mobObj2.set_contact(b=False)
+        return
 
     def draw_items(self):
         sd.take_background()
@@ -132,22 +162,26 @@ class MobileObject(ScreenObject):
         self.speedDirection = direction if value > 0 else 0
         return
 
+    def was_contact(self):
+        return self.wasContactBefore
+
+    def set_contact(self, b: bool):
+        self.wasContactBefore = b
+        return
+
     def check_contact(self, opponent: ScreenObject):
 
-        def check_ball_block_contact(ball: Ball, block: Block) -> bool:
-            def check_ball_vertex_contact(center, vertex, radius) -> bool:
-                distance = int(da_trans.vector_length(da_trans.vectorize(point1=center, point2=vertex)))
-                if distance > radius:
-                    return False
-                return True
+        def check_ball_block_contact(ball: Ball, block: Block) -> [bool, int]:
+            def check_ball_vertex_contact(centre, vertex, radius) -> bool:
+                distance = int(da_trans.vector_length(da_trans.vectorize(point1=centre, point2=vertex)))
+                return not (distance > radius)
 
-            def check_ball_edge_contact(center, radius, linePoint1, linePoint2):
-                distance = da_trans.distance_point_line(point=center, linePoint1=linePoint1, linePoint2=linePoint2)
-                if distance > radius:
-                    return False
-                return True
+            def check_ball_edge_contact(centre, radius, linePoint1, linePoint2):
+                distance = da_trans.distance_point_line(point=centre, linePoint1=linePoint1, linePoint2=linePoint2)
+                return not (distance > radius)
 
             contactDetected = False
+            normalToSurface = 0
             [referencePoint, oppositePoint] = opponent.get_limits()
             center = ball.get_position()
             ranges = ball.get_ranges()
@@ -157,32 +191,38 @@ class MobileObject(ScreenObject):
                            oppositePoint,
                            referencePoint[0], oppositePoint[1]]
             if referencePoint[0] <= center[0] <= oppositePoint[0]:
-                contactDetected = (check_ball_edge_contact(center=center,
+                contactDetected = (check_ball_edge_contact(centre=center,
                                                            radius=ballRadius,
                                                            linePoint1=blockVertex[3],
                                                            linePoint2=blockVertex[2])
-                                   or check_ball_edge_contact(center=center,
+                                   or check_ball_edge_contact(centre=center,
                                                               radius=ballRadius,
                                                               linePoint1=blockVertex[0],
                                                               linePoint2=blockVertex[1]))
                 if contactDetected:
-                    return True
+                    normalToSurface = da_trans.vector_angle(
+                        da_trans.vectorize(point1=blockVertex[0], point2=blockVertex[1]))
+                    return [True, normalToSurface]
             elif referencePoint[1] <= center[1] <= oppositePoint[1]:
-                contactDetected = (check_ball_edge_contact(center=center,
+                contactDetected = (check_ball_edge_contact(centre=center,
                                                            radius=ballRadius,
                                                            linePoint1=blockVertex[0],
                                                            linePoint2=blockVertex[4])
-                                   or check_ball_edge_contact(center=center,
+                                   or check_ball_edge_contact(centre=center,
                                                               radius=ballRadius,
                                                               linePoint1=blockVertex[1],
                                                               linePoint2=blockVertex[2]))
                 if contactDetected:
-                    return True
+                    normalToSurface = da_trans.vector_angle(
+                        da_trans.vectorize(point1=blockVertex[1], point2=blockVertex[2]))
+                    return [True, normalToSurface]
             else:
                 for point in blockVertex:
-                    if check_ball_vertex_contact(center=center, vertex=point, radius=ballRadius):
-                        return True
-            return contactDetected
+                    if check_ball_vertex_contact(centre=center, vertex=point, radius=ballRadius):
+                        normalToSurface = da_trans.vector_angle(
+                            da_trans.vectorize(point1=center, point2=point))
+                        return [True, normalToSurface]
+            return [contactDetected, normalToSurface]
 
         def check_ball_ball_contact(ball1: Ball, ball2: Ball) -> bool:
             nearDistance = ball1.xRelation + ball2.xRelation
@@ -237,3 +277,51 @@ class Ball(MobileObject):
     def draw_item(self):
         sd.circle(center_position=self.referencePoint, radius=self.xRelation, color=self.color, width=self.width)
         return
+
+
+# =================================================================================
+def ball_init(x_lim, y_lim):
+    ''' define start position, speed and radius for bubble in window'''
+    palette = [sd.COLOR_YELLOW,
+               sd.COLOR_RED,
+               sd.COLOR_CYAN,
+               sd.COLOR_GREEN]
+    color_count = len(palette) - 1
+    color = random.randint(0, color_count)
+    speed_limit = (5, 10)
+    radius_limit = (10, 50)
+    speed_value = random.randint(*speed_limit)  # star before list unpacks the arguments
+    speed_direction = random.randint(0, 360)
+    radius = random.randint(*radius_limit)
+    x = random.randint(radius + speed_limit[1], x_lim - radius - speed_limit[1])
+    y = random.randint(radius + speed_limit[1], y_lim - radius - speed_limit[1])
+    ball_data = ([x, y],
+                 [speed_value, speed_direction],
+                 radius,
+                 color)
+    return ball_data
+
+
+# =====================================================================================
+
+x_resolution, y_resolution = 1200, 700
+balls_count = 30
+
+window = Screen(x_size=x_resolution, y_size=y_resolution)
+window.draw_screen_background()
+frame = Block(reference=[1, 1], dimensions=[x_resolution - 2, y_resolution - 2])
+frame.set_color(color=sd.COLOR_RED)
+frame.set_width(width=2)
+window.add_stationary_item(frame)
+
+[reference, speed, radius, color] = ball_init(x_resolution, y_resolution)
+ball1 = Ball(reference=reference,radius=radius)
+ball1.set_speed(speed[0], speed[1])
+window.add_mobile_item(ball1)
+
+while not sd.user_want_exit():
+    window.draw_items()
+    window.manage_mobile_items_collisions()
+    window.move_mobile_items()
+
+sd.quit()
