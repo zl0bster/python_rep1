@@ -7,7 +7,7 @@ import math
 import simple_draw as sd
 
 
-def angular_to_decart(distance: int, angle: int) -> object:
+def angular_to_decart(distance: int, angle: int):
     x = int(distance * sd.cos(angle))
     y = int(distance * sd.sin(angle))
     return x, y
@@ -18,11 +18,9 @@ def vector_length(x: int, y: int):
 
 
 def vector_angle(x: int, y: int):
-    if y != 0:
-        angle = math.degrees(math.atan(x / y))
-    else:
-        angle = math.degrees(math.acos(x / vector_length(x=x, y=y)))
-    return angle
+    if y < 0:
+        return 360 - int(math.degrees(math.acos(float(x) / vector_length(x=x, y=y))))
+    return int(math.degrees(math.acos(float(x) / vector_length(x=x, y=y))))
 
 
 def decart_to_angular(x: int, y: int):
@@ -42,14 +40,19 @@ def vectorize(point1=[], point2=[]):
 
 
 def reflectance_angle(normalToSurface, angle):
-    return normalToSurface + (normalToSurface - angle)
+    reflection = normalToSurface + (normalToSurface - angle)
+    if reflection < 0:
+        return 360 + reflection
+    elif reflection > 359:
+        return reflection - 360
+    return reflection
 
 
-def vector_turn(point=[], turnValue: int):
+def vector_turn(point, turnValue: int):
     [length, angle] = decart_to_angular(x=point[0], y=point[1])
     angle += turnValue
     if angle < 0:
-        angle = 360 - angle
+        angle = 360 + angle
     elif angle > 359:
         angle -= 360
     return angular_to_decart(distance=length, angle=angle)
@@ -61,5 +64,5 @@ def distance_point_line(point, linePoint1, linePoint2):
         (linePoint2[1] - linePoint1[1]) * point[0] -
         (linePoint2[0] - linePoint1[0]) * point[1] +
         linePoint2[0] * linePoint1[1] - linePoint2[1] * linePoint1[0])
-    denominator = ((linePoint2[1] - linePoint1[1])**2 + (linePoint2[0] - linePoint1[0])**2)**0.5
-    return numerator/denominator
+    denominator = ((linePoint2[1] - linePoint1[1]) ** 2 + (linePoint2[0] - linePoint1[0]) ** 2) ** 0.5
+    return numerator / denominator
