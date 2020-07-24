@@ -60,6 +60,7 @@ class Screen:
                 if isContact:
                     if not mobObj.was_contact():
                         mobObjectChangeSpeed(item=mobObj, normalVector=normalVector)
+                        mobObj.set_contact(b=True)
                 else:
                     mobObj.set_contact(b=False)
         for i in range(0, len(self.mobile_objects) - 2):
@@ -70,8 +71,10 @@ class Screen:
                 if isContact:
                     if not mobObj1.was_contact():
                         mobObjectChangeSpeed(item=mobObj1, normalVector=normalVector)
+                        mobObj1.set_contact(b=True)
                     if not mobObj2.was_contact():
                         mobObjectChangeSpeed(item=mobObj2, normalVector=normalVector)
+                        mobObj2.set_contact(b=True)
                 else:
                     mobObj1.set_contact(b=False)
                     mobObj2.set_contact(b=False)
@@ -125,7 +128,7 @@ class ScreenObject:
         point2 = [self.xPosition + self.xDimension, self.yPosition + self.yDimension]
         return point1, point2
 
-    def set_color(self, color=None):
+    def set_color(self, color=sd.COLOR_YELLOW):
         if color:
             self.color = color
         return
@@ -236,9 +239,9 @@ class MobileObject(ScreenObject):
         return [False, 0]
 
     def make_movement(self):
-        positionRelation = tda.angular_to_decart(distance=self.speedValue, angle=self.speedDirection)
-        self.xPosition += positionRelation[0]
-        self.yPosition += positionRelation[1]
+        [x, y] = tda.angular_to_decart(distance=self.speedValue, angle=self.speedDirection)
+        self.xPosition += x
+        self.yPosition += y
         return
 
     # def draw_item(self):
@@ -258,7 +261,7 @@ class Block(ScreenObject):
 
     def draw_item(self):
         # super().draw_item()
-        sd.rectangle(left_bottom=self.referencePoint, right_top=self.oppositePoint, color=self.color, width=1)
+        sd.rectangle(left_bottom=self.referencePoint, right_top=self.oppositePoint, color=self.color, width=self.width)
         return
 
 
@@ -273,21 +276,25 @@ class Ball(MobileObject, ScreenObject):
 
     def draw_item(self):
         self.referencePoint = sd.get_point(x=self.xPosition, y=self.yPosition)
-        sd.circle(center_position=self.referencePoint, radius=self.xRelation, color=self.color, width=self.width)
+        if self.wasContactBefore:
+            color = sd.COLOR_RED
+        else:
+            color = self.color
+        sd.circle(center_position=self.referencePoint, radius=self.xRelation, color=color, width=self.width)
         return
 
 
 # =================================================================================
 def ball_init(x_lim, y_lim):
-    ''' define start position, speed and radius for bubble in window'''
+    ''' define start position, speed and radius for bubble in window '''
     palette = [sd.COLOR_YELLOW,
-               sd.COLOR_RED,
+               sd.COLOR_PURPLE,
                sd.COLOR_CYAN,
                sd.COLOR_GREEN]
     color_count = len(palette) - 1
-    color = random.randint(0, color_count)
+    color = palette[random.randint(0, color_count)]
     speed_limit = (5, 10)
-    radius_limit = (10, 50)
+    radius_limit = (25, 50)
     speed_value = random.randint(*speed_limit)  # star before list unpacks the arguments
     speed_direction = random.randint(0, 360)
     radius = random.randint(*radius_limit)
@@ -304,14 +311,24 @@ def ball_creation():
     [reference, speed, radius, color] = ball_init(x_resolution, y_resolution)
     ball1 = Ball(reference=reference, radius=radius)
     ball1.set_speed(speed[0], speed[1])
-    # ball1.set_color(color)
+    ball1.set_color(color)
+    ball1.set_width(2)
     return ball1
+
+
+def block_creation():
+    [reference, speed, radius, color] = ball_init(x_resolution, y_resolution)
+    block1 = Block(reference=reference, dimensions=[int(radius * speed[0]), int(radius * speed[1] / 36)])
+    block1.set_color(color)
+    block1.set_width(3)
+    return block1
 
 
 # =====================================================================================
 
 x_resolution, y_resolution = 1200, 700
 balls_count = 16
+blocks_count = 4
 
 window = Screen(x_size=x_resolution, y_size=y_resolution)
 window.draw_screen_background()
@@ -323,6 +340,10 @@ window.add_stationary_item(frame)
 while balls_count > 0:
     window.add_mobile_item(ball_creation())
     balls_count -= 1
+
+while blocks_count > 0:
+    window.add_stationary_item(block_creation())
+    blocks_count -= 1
 
 while not sd.user_want_exit():
     window.draw_items()
