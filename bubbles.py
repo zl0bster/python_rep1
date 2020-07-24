@@ -48,15 +48,18 @@ class Screen:
         return
 
     def manage_mobile_items_collisions(self):
+        def mobObjectChangeSpeed(item: MobileObject, normalVector):
+            [speedValue, direction] = item.get_speed()
+            direction = tda.reflectance_angle(normalToSurface=normalVector, angle=direction)
+            item.set_contact(b=True)
+            item.set_speed(value=speedValue, direction=direction)
+
         for statObj in self.static_objects:
             for mobObj in self.mobile_objects:
                 [isContact, normalVector] = mobObj.check_contact(statObj)
                 if isContact:
-                    if not mobObj.was_contact:
-                        [speedValue, direction] = mobObj.get_speed
-                        direction = tda.reflectance_angle(normalToSurface=normalVector, angle=direction)
-                        mobObj.set_contact(b=True)
-                        mobObj.set_speed(value=speedValue, direction=direction)
+                    if not mobObj.was_contact():
+                        mobObjectChangeSpeed(item=mobObj, normalVector=normalVector)
                 else:
                     mobObj.set_contact(b=False)
         for i in range(0, len(self.mobile_objects) - 2):
@@ -65,16 +68,10 @@ class Screen:
                 mobObj2 = self.mobile_objects[j]
                 [isContact, normalVector] = mobObj1.check_contact(mobObj2)
                 if isContact:
-                    if not mobObj1.was_contact:
-                        [speedValue, direction] = mobObj1.get_speed
-                        direction = tda.reflectance_angle(normalToSurface=normalVector, angle=direction)
-                        mobObj1.set_contact(b=True)
-                        mobObj1.set_speed(value=speedValue, direction=direction)
-                    if not mobObj2.was_contact:
-                        [speedValue, direction] = mobObj2.get_speed
-                        direction = tda.reflectance_angle(normalToSurface=normalVector, angle=direction)
-                        mobObj2.set_contact(b=True)
-                        mobObj2.set_speed(value=speedValue, direction=direction)
+                    if not mobObj1.was_contact():
+                        mobObjectChangeSpeed(item=mobObj1, normalVector=normalVector)
+                    if not mobObj2.was_contact():
+                        mobObjectChangeSpeed(item=mobObj2, normalVector=normalVector)
                 else:
                     mobObj1.set_contact(b=False)
                     mobObj2.set_contact(b=False)
@@ -150,7 +147,7 @@ class MobileObject(ScreenObject):
         self.wasContactBefore = False
         return
 
-    def get_speed(self):
+    def get_speed(self) -> (int, int):
         return self.speedValue, self.speedDirection
 
     def set_speed(self, value: int = 0, direction: int = 0):
@@ -158,17 +155,18 @@ class MobileObject(ScreenObject):
         self.speedDirection = direction if value > 0 else 0
         return
 
-    def was_contact(self):
+    def was_contact(self) -> bool:
         return self.wasContactBefore
 
     def set_contact(self, b: bool):
         self.wasContactBefore = b
         return
 
-    def check_contact(self, opponent: ScreenObject):
+    def check_contact(self, opponent: ScreenObject) -> [bool, int]:
         def check_ball_block_contact(ball: Ball, block: Block) -> [bool, int]:
             def check_ball_vertex_contact(centre, vertex, radius) -> bool:
-                distance = int(tda.vector_length(tda.vectorize(point1=centre, point2=vertex)))
+                [x, y] = tda.vectorize(point1=centre, point2=vertex)
+                distance = int(tda.vector_length(x=x, y=y))
                 return not (distance > radius)
 
             def check_ball_edge_contact(centre, radius, linePoint1, linePoint2):
@@ -195,31 +193,31 @@ class MobileObject(ScreenObject):
                                                               linePoint1=blockVertex[0],
                                                               linePoint2=blockVertex[1]))
                 if contactDetected:
-                    normalToSurface = 90 + tda.vector_angle(
-                        tda.vectorize(point1=blockVertex[0], point2=blockVertex[1]))
+                    [x, y] = tda.vectorize(point1=blockVertex[0], point2=blockVertex[1])
+                    normalToSurface = tda.vector_angle(x=x, y=y)
                     return [True, normalToSurface]
             elif referencePoint[1] <= center[1] <= oppositePoint[1]:
                 contactDetected = (check_ball_edge_contact(centre=center,
                                                            radius=ballRadius,
                                                            linePoint1=blockVertex[0],
-                                                           linePoint2=blockVertex[4])
+                                                           linePoint2=blockVertex[3])
                                    or check_ball_edge_contact(centre=center,
                                                               radius=ballRadius,
                                                               linePoint1=blockVertex[1],
                                                               linePoint2=blockVertex[2]))
                 if contactDetected:
-                    normalToSurface = 90 + tda.vector_angle(
-                        tda.vectorize(point1=blockVertex[1], point2=blockVertex[2]))
+                    [x, y] = tda.vectorize(point1=blockVertex[0], point2=blockVertex[1])
+                    normalToSurface = 90 + tda.vector_angle(x=x, y=y)
                     return [True, normalToSurface]
             else:
                 for point in blockVertex:
                     if check_ball_vertex_contact(centre=center, vertex=point, radius=ballRadius):
-                        normalToSurface = tda.vector_angle(
-                            tda.vectorize(point1=center, point2=point))
+                        [x, y] = tda.vectorize(point1=center, point2=point)
+                        normalToSurface = tda.vector_angle(x=x, y=y)
                         return [True, normalToSurface]
             return [contactDetected, normalToSurface]
 
-        def check_ball_ball_contact(ball1: Ball, ball2: Ball) -> bool:
+        def check_ball_ball_contact(ball1: Ball, ball2: Ball) -> [bool, int]:
             nearDistance = ball1.xRelation + ball2.xRelation
             # farDistance = nearDistance + ball1.speedValue + ball2.speedValue
             [x, y] = tda.vectorize(point1=ball1.get_position(), point2=ball2.get_position())
