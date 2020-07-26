@@ -14,8 +14,6 @@ class Screen:
         print(f"Screen resolution = {width} x {height}")
         self.x_resolution = x_size if x_size < width else width
         self.y_resolution = y_size if y_size < height else height
-        # self.mobile_objects_count = 0
-        # self.static_objects_count = 0
         self.mobile_objects = []
         self.static_objects = []
         sd.resolution = (self.x_resolution, self.y_resolution)
@@ -60,28 +58,24 @@ class Screen:
                 if isContact:
                     if not mobObj.was_contact():
                         mobObjectChangeSpeed(item=mobObj, normalVector=normalVector)
-                        mobObj.set_contact(b=True)
                 else:
                     mobObj.set_contact(b=False)
-        for i in range(0, len(self.mobile_objects) - 2):
-            for j in range(i + 1, len(self.mobile_objects) - 1):
+        for i in range(0, len(self.mobile_objects) - 1):
+            for j in range(i + 1, len(self.mobile_objects)):
                 mobObj1 = self.mobile_objects[i]
                 mobObj2 = self.mobile_objects[j]
                 [isContact, normalVector] = mobObj1.check_contact(mobObj2)
                 if isContact:
                     if not mobObj1.was_contact():
                         mobObjectChangeSpeed(item=mobObj1, normalVector=normalVector)
-                        mobObj1.set_contact(b=True)
                     if not mobObj2.was_contact():
                         mobObjectChangeSpeed(item=mobObj2, normalVector=normalVector)
-                        mobObj2.set_contact(b=True)
                 else:
                     mobObj1.set_contact(b=False)
                     mobObj2.set_contact(b=False)
         return
 
     def draw_items(self):
-        # sd.take_background()
         sd.start_drawing()  # removes  blinking
         for statObj in self.static_objects:
             statObj.draw_item()
@@ -173,7 +167,7 @@ class MobileObject(ScreenObject):
                 return not (distance > radius)
 
             def check_ball_edge_contact(centre, radius, linePoint1, linePoint2):
-                distance = tda.distance_point_line(point=centre, linePoint1=linePoint1, linePoint2=linePoint2)
+                distance = abs(tda.distance_point_line(point=centre, linePoint1=linePoint1, linePoint2=linePoint2))
                 return not (distance > radius)
 
             contactDetected = False
@@ -193,8 +187,8 @@ class MobileObject(ScreenObject):
                                                            linePoint2=blockVertex[2])
                                    or check_ball_edge_contact(centre=center,
                                                               radius=ballRadius,
-                                                              linePoint1=blockVertex[0],
-                                                              linePoint2=blockVertex[1]))
+                                                              linePoint1=blockVertex[1],
+                                                              linePoint2=blockVertex[0]))
                 if contactDetected:
                     [x, y] = tda.vectorize(point1=blockVertex[0], point2=blockVertex[1])
                     normalToSurface = tda.vector_angle(x=x, y=y)
@@ -216,22 +210,19 @@ class MobileObject(ScreenObject):
                 for point in blockVertex:
                     if check_ball_vertex_contact(centre=center, vertex=point, radius=ballRadius):
                         [x, y] = tda.vectorize(point1=center, point2=point)
-                        normalToSurface = tda.vector_angle(x=x, y=y)
+                        normalToSurface = 90 + tda.vector_angle(x=x, y=y)
                         return [True, normalToSurface]
             return [contactDetected, normalToSurface]
 
         def check_ball_ball_contact(ball1: Ball, ball2: Ball) -> [bool, int]:
-            nearDistance = ball1.xRelation + ball2.xRelation
-            # farDistance = nearDistance + ball1.speedValue + ball2.speedValue
+            contactDistance = ball1.xRelation + ball2.xRelation
             [x, y] = tda.vectorize(point1=ball1.get_position(), point2=ball2.get_position())
-            ball_distance = tda.vector_length(x, y)
-            # if farDistance < ball_distance:
-            #     return False
-            if nearDistance >= ball_distance:
-                return [True, tda.vector_angle(x, y)]
+            ballDistance = tda.vector_length(x, y)
+            if not ballDistance > contactDistance:
+                return [True, 90 + tda.vector_angle(x, y)]
             return [False, 0]
 
-        if isinstance(self, Ball):
+        if isinstance(self, Ball) and not self.wasContactBefore:
             if isinstance(opponent, Block):
                 return check_ball_block_contact(self, opponent)
             elif isinstance(opponent, Ball):
@@ -243,10 +234,6 @@ class MobileObject(ScreenObject):
         self.xPosition += x
         self.yPosition += y
         return
-
-    # def draw_item(self):
-    #     # super().draw_item()
-    #     pass
 
 
 class Block(ScreenObject):
@@ -260,7 +247,6 @@ class Block(ScreenObject):
         return
 
     def draw_item(self):
-        # super().draw_item()
         sd.rectangle(left_bottom=self.referencePoint, right_top=self.oppositePoint, color=self.color, width=self.width)
         return
 
@@ -326,9 +312,9 @@ def block_creation():
 
 # =====================================================================================
 
-x_resolution, y_resolution = 1200, 700
+x_resolution, y_resolution = 1600, 950
 balls_count = 16
-blocks_count = 4
+blocks_count = 2
 
 window = Screen(x_size=x_resolution, y_size=y_resolution)
 window.draw_screen_background()
@@ -337,13 +323,13 @@ frame.set_color(color=sd.COLOR_RED)
 frame.set_width(width=2)
 window.add_stationary_item(frame)
 
-while balls_count > 0:
-    window.add_mobile_item(ball_creation())
-    balls_count -= 1
-
 while blocks_count > 0:
     window.add_stationary_item(block_creation())
     blocks_count -= 1
+
+while balls_count > 0:
+    window.add_mobile_item(ball_creation())
+    balls_count -= 1
 
 while not sd.user_want_exit():
     window.draw_items()
