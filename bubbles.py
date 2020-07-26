@@ -310,18 +310,34 @@ def block_creation():
     return block1
 
 
+def wall_block_creation(reference, dimensions):
+    block1 = Block(reference=reference, dimensions=dimensions)
+    block1.set_color(sd.COLOR_GREEN)
+    block1.set_width(1)
+    return block1
+
+
 # =====================================================================================
 
 x_resolution, y_resolution = 1600, 950
-balls_count = 16
+balls_count = 28
 blocks_count = 2
 
 window = Screen(x_size=x_resolution, y_size=y_resolution)
 window.draw_screen_background()
-frame = Block(reference=[1, 1], dimensions=[x_resolution - 2, y_resolution - 2])
-frame.set_color(color=sd.COLOR_RED)
-frame.set_width(width=2)
-window.add_stationary_item(frame)
+# frame = Block(reference=[1, 1], dimensions=[x_resolution - 2, y_resolution - 2])
+# frame.set_color(color=sd.COLOR_RED)
+# frame.set_width(width=2)
+# window.add_stationary_item(frame)
+
+# define wall blocks
+wallWidth = 3
+wallBlocks = [[(0, 0), (wallWidth, y_resolution-1)],
+              [(wallWidth, 0), (x_resolution - wallWidth, wallWidth)],
+              [(x_resolution - wallWidth, 0), (x_resolution-1, y_resolution-1)],
+              [(wallWidth, y_resolution - wallWidth), (x_resolution - wallWidth, y_resolution-1)]]
+for wall in wallBlocks:
+    window.add_stationary_item(wall_block_creation(wall[0], wall[1]))
 
 while blocks_count > 0:
     window.add_stationary_item(block_creation())
