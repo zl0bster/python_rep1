@@ -59,6 +59,10 @@ class test_callculations(unittest.TestCase):
         result = tda.vector_angle(x=-10, y=-10)
         self.assertEqual(result, 225)
 
+    def test_angleB(self):
+        result = tda.vector_angle(x=0, y=0)
+        self.assertEqual(result, 0)
+
     def test_vectorize1(self):
         result = tda.vectorize([0, 0], [2, 2])
         self.assertEqual(result, (2, 2))

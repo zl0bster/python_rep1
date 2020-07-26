@@ -18,6 +18,8 @@ def vector_length(x: int, y: int):
 
 
 def vector_angle(x: int, y: int):
+    if x == 0 and y == 0:
+        return 0
     if y < 0:
         return 360 - int(math.degrees(math.acos(float(x) / vector_length(x=x, y=y))))
     return int(math.degrees(math.acos(float(x) / vector_length(x=x, y=y))))
@@ -33,7 +35,7 @@ def decart_to_angular(x: int, y: int):
     return distance, angle
 
 
-def vectorize(point1=[], point2=[]):
+def vectorize(point1, point2):
     x = point2[0] - point1[0]
     y = point2[1] - point1[1]
     return x, y
