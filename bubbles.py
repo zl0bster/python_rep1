@@ -3,6 +3,7 @@ from win32api import GetSystemMetrics
 import fractal_tree_draw as fd
 import transform_decart_ang as tda
 import random
+import time
 
 
 class Screen:
@@ -66,6 +67,26 @@ class Screen:
         for dinObj in self.mobile_objects:
             dinObj.make_movement()
 
+    def export_mobile_items(self):
+        headLine = "Xpos, Ypos, Xref, Yref, Xsize, Ysize, Speed Value, Speed Direction, Was Contact,"
+        logTimeTuple = time.localtime(time.time())
+        logTimeStr = f"{logTimeTuple.tm_year}-{logTimeTuple.tm_mon:}-{logTimeTuple.tm_mday} {logTimeTuple.tm_hour}-" \
+                     f"{logTimeTuple.tm_min}-{logTimeTuple.tm_sec}"
+        logFileName = f"balls log {logTimeStr}.csv"
+        print(logFileName)
+        try:
+            logFile = open(logFileName, 'w')
+            logFile.write(headLine + '\n')
+            for dinObj in self.mobile_objects:
+                data = dinObj.export_data()
+                logFile.write(data + '\n')
+
+        except OSError as errorMessage:
+            print(errorMessage)
+        finally:
+            logFile.close()
+            print(f"log file {logFileName} is closed")
+
     def manage_mobile_items_collisions(self):
         def mobObjectChangeSpeed(item: MobileObject, normalVector):
             [speedValue, direction] = item.get_speed()
@@ -122,6 +143,9 @@ class Screen:
         self.draw_items()
         self.manage_mobile_items_collisions()
         self.move_mobile_items()
+        [cursorPos, mouseState] = sd.get_mouse_state()
+        if mouseState[2] != 0:
+            self.export_mobile_items()
 
 
 class ScreenObject:
@@ -142,6 +166,12 @@ class ScreenObject:
     def draw_item(self):
         pass
 
+    def export_data(self):
+        pass
+
+    def import_data(self):
+        pass
+
     def get_position(self):
         return self.xPosition, self.yPosition
 
@@ -160,7 +190,6 @@ class ScreenObject:
     def set_color(self, color=sd.COLOR_YELLOW):
         if color:
             self.color = color
-
 
     def set_width(self, width=None):
         if width:
@@ -190,6 +219,15 @@ class MobileObject(ScreenObject):
 
     def set_contact(self):
         self.wasContactBefore += 1
+
+    def export_data(self) -> str:
+        export = f" {self.xPosition}, {self.yPosition}, {self.xRelation}, {self.yRelation}," \
+                 f" {self.xDimension}, {self.yDimension}, {self.speedValue}, {self.speedDirection}," \
+                 f" {self.wasContactBefore}"
+        return export
+
+    def import_data(self, data: str):
+        pass
 
     def lost_contact(self):
         if self.wasContactBefore > 0:
