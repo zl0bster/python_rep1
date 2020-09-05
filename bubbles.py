@@ -106,6 +106,7 @@ class Screen:
                 if isContact:
                     if mobObj.was_contact() == 0:
                         mobObjectChangeSpeed(item=mobObj, normalVector=normalVector)
+                        mobObj.set_contact()
                 else:
                     mobObj.lost_contact()
         for i in range(0, len(self.mobile_objects) - 1):
@@ -116,8 +117,10 @@ class Screen:
                 if isContact:
                     if mobObj1.was_contact() == 0:
                         mobObjectChangeSpeed(item=mobObj1, normalVector=normalVector)
+                        mobObj1.set_contact()
                     if mobObj2.was_contact() == 0:
                         mobObjectChangeSpeed(item=mobObj2, normalVector=normalVector)
+                        mobObj2.set_contact()
                 else:
                     mobObj1.lost_contact()
                     mobObj2.lost_contact()
@@ -329,8 +332,7 @@ class MobileObject(ScreenObject):
         return
 
     def mobile_object_init(self):
-        # speed_limit = (5, 10)
-        speed_limit = (int(window.x_resolution * 0.003), int(window.x_resolution * 0.006))
+        speed_limit = (int(window.x_resolution * 0.003), int(window.x_resolution * 0.007))
         speed_value = random.randint(*speed_limit)  # star before list unpacks the arguments
         speed_direction = random.randint(0, 360)
         self.speedDirection = speed_direction
@@ -384,27 +386,32 @@ class Ball(MobileObject):
         self.referencePoint = sd.get_point(x=self.xPosition, y=self.yPosition)
         if self.wasContactBefore > 0:
             color = sd.COLOR_RED
+            width = 10
         else:
             color = self.color
-        sd.circle(center_position=self.referencePoint, radius=self.xRelation, color=color, width=self.width)
+            width = self.width
+        sd.circle(center_position=self.referencePoint, radius=self.xRelation, color=color, width=width)
         return
 
     def ball_init(self, x_lim, y_lim):
         ''' define start position, speed and radius for bubble in window '''
-        wall_thickness = 5
         radius_limit = (25, 50)
-        speed_limit = (5, 10)
         radius = random.randint(*radius_limit)
-        x0 = radius + speed_limit[1] + wall_thickness
-        x_max = x_lim - radius - speed_limit[1] - wall_thickness
-        y0 = x0
-        y_max = y_lim - radius - speed_limit[1] - wall_thickness
-        self.screen_object_init(x0=x0, y0=y0, x_lim=x_max, y_lim=y_max)
         self.mobile_object_init()
         self.xRelation = radius
         self.yRelation = radius
         self.xDimension = radius * 2
         self.yDimension = self.xDimension
+        self.ball_reset_position(x_lim, y_lim)
+        return
+
+    def ball_reset_position(self, x_lim, y_lim):
+        wall_thickness = 5
+        x0 = self.xRelation + self.speedValue + wall_thickness
+        x_max = x_lim - self.xRelation - self.speedValue - wall_thickness
+        y0 = x0
+        y_max = y_lim - self.xRelation - self.speedValue - wall_thickness
+        self.screen_object_init(x0=x0, y0=y0, x_lim=x_max, y_lim=y_max)
         return
 
 
