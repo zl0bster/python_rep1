@@ -1,9 +1,11 @@
-import simple_draw as sd
-from win32api import GetSystemMetrics
-import fractal_tree_draw as fd
-import transform_decart_ang as tda
 import random
 import time
+
+import simple_draw as sd
+from win32api import GetSystemMetrics
+
+import fractal_tree_draw as fd
+import transform_decart_ang as tda
 
 
 class Screen:
@@ -196,6 +198,21 @@ class ScreenObject:
             self.width = width
         return
 
+    def screen_object_init(self, x0=0, y0=0, x_lim=200, y_lim=200):
+        palette = [sd.COLOR_YELLOW,
+                   sd.COLOR_PURPLE,
+                   sd.COLOR_CYAN,
+                   sd.COLOR_GREEN]
+        color_count = len(palette) - 1
+        color = palette[random.randint(0, color_count)]
+        x = random.randint(x0, x_lim)
+        y = random.randint(y0, y_lim)
+        self.xPosition = x
+        self.yPosition = y
+        self.color = color
+        self.width = 2
+        return
+
 
 class MobileObject(ScreenObject):
     """changes its coordinates, checks collision
@@ -311,15 +328,23 @@ class MobileObject(ScreenObject):
         self.yPosition += y
         return
 
+    def mobile_object_init(self):
+        # speed_limit = (5, 10)
+        speed_limit = (int(window.x_resolution * 0.003), int(window.x_resolution * 0.006))
+        speed_value = random.randint(*speed_limit)  # star before list unpacks the arguments
+        speed_direction = random.randint(0, 360)
+        self.speedDirection = speed_direction
+        self.speedValue = speed_value
+        return
+
 
 class Block(ScreenObject):
     """ rectangular static blocks """
 
-    def __init__(self, reference: list, dimensions: list):
+    def __init__(self, reference=[0, 0], dimensions=[1, 1]):
         relation = [0, 0]
         super().__init__(reference, relation, dimensions)
-        self.referencePoint = sd.get_point(x=self.xPosition, y=self.yPosition)
-        self.oppositePoint = sd.get_point(x=self.xPosition + self.xDimension, y=self.yPosition + self.yDimension)
+        self.init_points()
         return
 
     def draw_item(self):
@@ -327,11 +352,29 @@ class Block(ScreenObject):
                      width=self.width)
         return
 
+    def init_points(self):
+        self.referencePoint = sd.get_point(x=self.xPosition, y=self.yPosition)
+        self.oppositePoint = sd.get_point(x=self.xPosition + self.xDimension, y=self.yPosition + self.yDimension)
 
-class Ball(MobileObject, ScreenObject):
+    def block_init(self, x_lim=200, y_lim=200):
+        wall_thickness = 5
+        x_size = random.randint(int(x_lim * 0.05), int(x_lim * 0.4))
+        y_size = random.randint(int(y_lim * 0.05), int(y_lim * 0.4))
+        x0 = wall_thickness
+        x_max = x_lim - x_size - wall_thickness
+        y0 = x0
+        y_max = y_lim - y_size - wall_thickness
+        self.screen_object_init(x0=x0, y0=y0, x_lim=x_max, y_lim=y_max)
+        self.xDimension = x_size
+        self.yDimension = y_size
+        self.init_points()
+        return
+
+
+class Ball(MobileObject):
     """ mobile balls with radius """
 
-    def __init__(self, reference: list, radius: int):
+    def __init__(self, reference=[0, 0], radius=1):
         relation = [radius, radius]
         dimensions = [radius * 2, radius * 2]
         super().__init__(reference, relation, dimensions)
@@ -346,45 +389,26 @@ class Ball(MobileObject, ScreenObject):
         sd.circle(center_position=self.referencePoint, radius=self.xRelation, color=color, width=self.width)
         return
 
+    def ball_init(self, x_lim, y_lim):
+        ''' define start position, speed and radius for bubble in window '''
+        wall_thickness = 5
+        radius_limit = (25, 50)
+        speed_limit = (5, 10)
+        radius = random.randint(*radius_limit)
+        x0 = radius + speed_limit[1] + wall_thickness
+        x_max = x_lim - radius - speed_limit[1] - wall_thickness
+        y0 = x0
+        y_max = y_lim - radius - speed_limit[1] - wall_thickness
+        self.screen_object_init(x0=x0, y0=y0, x_lim=x_max, y_lim=y_max)
+        self.mobile_object_init()
+        self.xRelation = radius
+        self.yRelation = radius
+        self.xDimension = radius * 2
+        self.yDimension = self.xDimension
+        return
+
 
 # =================================================================================
-def ball_init(x_lim, y_lim):
-    ''' define start position, speed and radius for bubble in window '''
-    palette = [sd.COLOR_YELLOW,
-               sd.COLOR_PURPLE,
-               sd.COLOR_CYAN,
-               sd.COLOR_GREEN]
-    color_count = len(palette) - 1
-    color = palette[random.randint(0, color_count)]
-    speed_limit = (5, 10)
-    radius_limit = (25, 50)
-    speed_value = random.randint(*speed_limit)  # star before list unpacks the arguments
-    speed_direction = random.randint(0, 360)
-    radius = random.randint(*radius_limit)
-    x = random.randint(radius + speed_limit[1], x_lim - radius - speed_limit[1])
-    y = random.randint(radius + speed_limit[1], y_lim - radius - speed_limit[1])
-    ball_data = ([x, y],
-                 [speed_value, speed_direction],
-                 radius,
-                 color)
-    return ball_data
-
-
-def ball_creation():
-    [reference, speed, radius, color] = ball_init(x_resolution, y_resolution)
-    ball1 = Ball(reference=reference, radius=radius)
-    ball1.set_speed(speed[0], speed[1])
-    ball1.set_color(color)
-    ball1.set_width(2)
-    return ball1
-
-
-def block_creation():
-    [reference, speed, radius, color] = ball_init(x_resolution, y_resolution)
-    block1 = Block(reference=reference, dimensions=[int(radius * speed[0]), int(radius * speed[1] / 36)])
-    block1.set_color(color)
-    block1.set_width(3)
-    return block1
 
 
 def wall_block_creation(reference, dimensions):
@@ -401,7 +425,6 @@ balls_count = 28
 blocks_count = 2
 
 window = Screen(x_size=x_resolution, y_size=y_resolution)
-window.draw_screen_background()
 
 wallWidth = 3
 wallBlocks = [[(0, 0), (wallWidth, y_resolution - 1)],
@@ -412,11 +435,15 @@ for wall in wallBlocks:
     window.add_stationary_item(wall_block_creation(wall[0], wall[1]))
 
 while blocks_count > 0:
-    window.add_stationary_item(block_creation())
+    block1 = Block()
+    block1.block_init(x_resolution, y_resolution)
+    window.add_stationary_item(block1)
     blocks_count -= 1
 
 while balls_count > 0:
-    window.add_mobile_item(ball_creation())
+    ball1 = Ball()
+    ball1.ball_init(x_resolution, y_resolution)
+    window.add_mobile_item(ball1)
     balls_count -= 1
 
 while not sd.user_want_exit():
