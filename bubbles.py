@@ -21,7 +21,7 @@ class Screen:
         self.static_objects = []
         # self.contacting_items = {}
         sd.resolution = (self.x_resolution, self.y_resolution)
-        self.draw_screen_background()
+        # self.draw_screen_background()
         sd.take_background()
 
     def draw_screen_background(self):
@@ -90,6 +90,11 @@ class Screen:
                         mobObj.set_contact()
                 else:
                     mobObj.lost_contact()
+                if mobObj.was_contact() > 2:
+                    mobObjectDispersion(mobObj, normalVector)
+                    # mobObjectChangeSpeed(item=mobObj, normalVector=normalVector)
+                if mobObj.is_inside(statObj):
+                    mobObj.ball_reset_position(x_resolution,y_resolution)
         for i in range(0, len(self.mobile_objects) - 1):
             for j in range(i + 1, len(self.mobile_objects)):
                 mobObj1 = self.mobile_objects[i]
@@ -133,16 +138,15 @@ class Screen:
         if mouseState[2] != 0:
             self.export_mobile_items()
 
-    def screen_init(self, balls=3, blocks=1):
-        wallWidth = 3
+    def screen_init(self, balls=3, blocks=1, wallWidth=3):
         x_resolution = self.x_resolution
         y_resolution = self.y_resolution
         wallBlocks = [[(0, 0), (wallWidth, y_resolution - 1)],
                       [(wallWidth, 0), (x_resolution - wallWidth, wallWidth)],
-                      [(x_resolution - wallWidth, 0), (x_resolution - 1, y_resolution - 1)],
-                      [(wallWidth, y_resolution - wallWidth), (x_resolution - wallWidth, y_resolution - 1)]]
+                      [(x_resolution - 1 - wallWidth, 0), (x_resolution - 1, y_resolution - 1)],
+                      [(wallWidth, y_resolution - 1 - wallWidth), (x_resolution - wallWidth, y_resolution - 1)]]
         for wall in wallBlocks:
-            self.add_stationary_item(wall_block_creation(wall[0], wall[1]))
+            self.add_stationary_item(Block(wall[0], wall[1]))
         while blocks > 0:
             block1 = Block()
             block1.block_init(x_resolution, y_resolution)
@@ -190,8 +194,8 @@ class ScreenObject:
         return r000degrees, r090degrees, r180degrees, r270degrees
 
     def get_limits(self):
-        point1 = [self.xPosition, self.yPosition]
-        point2 = [self.xPosition + self.xDimension, self.yPosition + self.yDimension]
+        point1 = [self.xPosition - self.xRelation, self.yPosition - self.yRelation]
+        point2 = [point1[0] + self.xDimension, point1[1] + self.yDimension]
         return point1, point2
 
     def set_color(self, color=sd.COLOR_YELLOW):
@@ -201,7 +205,6 @@ class ScreenObject:
     def set_width(self, width=None):
         if width:
             self.width = width
-        return
 
     def screen_object_init(self, x0=0, y0=0, x_lim=200, y_lim=200):
         palette = [sd.COLOR_YELLOW,
@@ -216,7 +219,11 @@ class ScreenObject:
         self.yPosition = y
         self.color = color
         self.width = 2
-        return
+
+    def is_inside(self, screenItem):
+        x_own, y_own = self.get_position()
+        (x1, y1), (x2, y2) = screenItem.get_limits()
+        return (x1 < x_own < x2) and (y1 < y_own < y2)
 
 
 class MobileObject(ScreenObject):
@@ -420,21 +427,12 @@ class Ball(MobileObject):
 # =================================================================================
 
 
-def wall_block_creation(reference, dimensions):
-    block1 = Block(reference=reference, dimensions=dimensions)
-    block1.set_color(sd.COLOR_GREEN)
-    block1.set_width(1)
-    return block1
-
-
 # =====================================================================================
 
 x_resolution, y_resolution = 1600, 950
-balls_count = 28
-blocks_count = 2
 
 window = Screen(x_size=x_resolution, y_size=y_resolution)
-window.screen_init(balls=balls_count, blocks=blocks_count)
+window.screen_init(balls=20, blocks=3, wallWidth=4)
 
 while not sd.user_want_exit():
     window.do()
