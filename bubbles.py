@@ -19,7 +19,7 @@ class Screen:
         self.y_resolution = y_size if y_size < height else height
         self.mobile_objects = []
         self.static_objects = []
-        self.contacting_items = {}
+        # self.contacting_items = {}
         sd.resolution = (self.x_resolution, self.y_resolution)
         self.draw_screen_background()
         sd.take_background()
@@ -45,25 +45,6 @@ class Screen:
     def add_stationary_item(self, stat_item):
         if isinstance(stat_item, ScreenObject) and not isinstance(stat_item, MobileObject):
             self.static_objects.append(stat_item)
-
-    # def add_contacting_item(self, mov_item):
-    #     if isinstance(mov_item, MobileObject):
-    #         itemName = id(mov_item)
-    #         if not itemName in self.contacting_items:
-    #             self.contacting_items.update({itemName: [mov_item, 1]})
-    #
-    # def remove_contacted_item(self, mov_item):
-    #     if isinstance(mov_item, MobileObject):
-    #         itemName = id(mov_item)
-    #         if itemName in self.contacting_items:
-    #             self.contacting_items.pop(itemName)
-    #
-    # def manage_contacts(self):
-    #     for itemName in self.contacting_items.keys():
-    #         itemData = self.contacting_items[itemName]
-    #         itemData[1] += 1
-    #         # self.contacting_items([itemName])[1] += 1
-    #         self.contacting_items[itemName] = itemData
 
     def move_mobile_items(self):
         for dinObj in self.mobile_objects:
@@ -151,6 +132,27 @@ class Screen:
         [cursorPos, mouseState] = sd.get_mouse_state()
         if mouseState[2] != 0:
             self.export_mobile_items()
+
+    def screen_init(self, balls=3, blocks=1):
+        wallWidth = 3
+        x_resolution = self.x_resolution
+        y_resolution = self.y_resolution
+        wallBlocks = [[(0, 0), (wallWidth, y_resolution - 1)],
+                      [(wallWidth, 0), (x_resolution - wallWidth, wallWidth)],
+                      [(x_resolution - wallWidth, 0), (x_resolution - 1, y_resolution - 1)],
+                      [(wallWidth, y_resolution - wallWidth), (x_resolution - wallWidth, y_resolution - 1)]]
+        for wall in wallBlocks:
+            self.add_stationary_item(wall_block_creation(wall[0], wall[1]))
+        while blocks > 0:
+            block1 = Block()
+            block1.block_init(x_resolution, y_resolution)
+            self.add_stationary_item(block1)
+            blocks -= 1
+        while balls > 0:
+            ball1 = Ball()
+            ball1.ball_init(x_resolution, y_resolution)
+            self.add_mobile_item(ball1)
+            balls -= 1
 
 
 class ScreenObject:
@@ -432,26 +434,7 @@ balls_count = 28
 blocks_count = 2
 
 window = Screen(x_size=x_resolution, y_size=y_resolution)
-
-wallWidth = 3
-wallBlocks = [[(0, 0), (wallWidth, y_resolution - 1)],
-              [(wallWidth, 0), (x_resolution - wallWidth, wallWidth)],
-              [(x_resolution - wallWidth, 0), (x_resolution - 1, y_resolution - 1)],
-              [(wallWidth, y_resolution - wallWidth), (x_resolution - wallWidth, y_resolution - 1)]]
-for wall in wallBlocks:
-    window.add_stationary_item(wall_block_creation(wall[0], wall[1]))
-
-while blocks_count > 0:
-    block1 = Block()
-    block1.block_init(x_resolution, y_resolution)
-    window.add_stationary_item(block1)
-    blocks_count -= 1
-
-while balls_count > 0:
-    ball1 = Ball()
-    ball1.ball_init(x_resolution, y_resolution)
-    window.add_mobile_item(ball1)
-    balls_count -= 1
+window.screen_init(balls=balls_count, blocks=blocks_count)
 
 while not sd.user_want_exit():
     window.do()
