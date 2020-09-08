@@ -92,7 +92,6 @@ class Screen:
                             mobObj.ball_init(x_resolution, y_resolution)
                         if statObj.is_to_remove_now():
                             statObj.block_init(x_resolution, y_resolution)
-
                 else:
                     mobObj.lost_contact()
                 if mobObj.was_contact() > 2:
@@ -109,9 +108,13 @@ class Screen:
                     if mobObj1.was_contact() == 0:
                         mobObjectChangeSpeed(item=mobObj1, normalVector=normalVector)
                         mobObj1.set_contact()
+                        if mobObj1.is_to_remove_now():
+                            mobObj1.ball_init(x_resolution, y_resolution)
                     if mobObj2.was_contact() == 0:
                         mobObjectChangeSpeed(item=mobObj2, normalVector=normalVector)
                         mobObj2.set_contact()
+                        if mobObj2.is_to_remove_now():
+                            mobObj2.ball_init(x_resolution, y_resolution)
                 else:
                     mobObj1.lost_contact()
                     mobObj2.lost_contact()
@@ -152,16 +155,24 @@ class Screen:
                       [(wallWidth, y_resolution - 1 - wallWidth), (x_resolution - wallWidth, y_resolution - 1)]]
         for wall in wallBlocks:
             self.add_stationary_item(Block(wall[0], wall[1]))
+            print('wall block', id(wall), 'added')
         while blocks > 0:
             block1 = Block()
             block1.block_init(x_resolution, y_resolution)
             self.add_stationary_item(block1)
+            print('block', blocks, 'added')
             blocks -= 1
         while balls > 0:
             ball1 = Ball()
             ball1.ball_init(x_resolution, y_resolution)
             self.add_mobile_item(ball1)
+            print('balls', balls, 'added')
             balls -= 1
+
+    def stat_items_issue(self, ignore=None):
+        for item in self.static_objects:
+            if not item is ignore:
+                yield item
 
 
 class ScreenObject:
@@ -237,9 +248,12 @@ class ScreenObject:
 
     def is_to_remove_now(self):
         if self.isRemovable:
-            if self.tillRemove < 6:
+            if self.tillRemove < 10:
                 self.set_color(sd.COLOR_RED)
                 self.set_width(3)
+                if type(self) is Ball:
+                    self.set_radius(int(0.9 * self.get_radius()))
+                    self.set_width(int(0.1 * self.get_radius()))
             if self.tillRemove < 1:
                 return True
             else:
@@ -388,7 +402,6 @@ class Block(ScreenObject):
     def draw_item(self):
         sd.rectangle(left_bottom=self.referencePoint, right_top=self.oppositePoint, color=self.color,
                      width=self.width)
-        return
 
     def init_points(self):
         self.referencePoint = sd.get_point(x=self.xPosition, y=self.yPosition)
@@ -402,12 +415,23 @@ class Block(ScreenObject):
         x_max = x_lim - x_size - wall_thickness
         y0 = x0
         y_max = y_lim - y_size - wall_thickness
-        self.screen_object_init(x0=x0, y0=y0, x_lim=x_max, y_lim=y_max)
+        self.set_lifetime(random.randint(10, 100))
+        intersected = True
         self.xDimension = x_size
         self.yDimension = y_size
+        i = 0
+        self.screen_object_init(x0=x0, y0=y0, x_lim=x_max, y_lim=y_max)
+        # while intersected:
+        #     i += 1
+        #     j = 0
+        #     self.screen_object_init(x0=x0, y0=y0, x_lim=x_max, y_lim=y_max)
+        #
+        #     for item in window.static_objects:
+        #         j += 1
+        #         if id(self) != id(item):
+        #             print('iteration ', i, j, intersected)
+        #             intersected = intersected or item.is_inside(self)
         self.init_points()
-        self.set_lifetime(random.randint(10, 100))
-        return
 
 
 class Ball(MobileObject):
@@ -430,18 +454,23 @@ class Ball(MobileObject):
         sd.circle(center_position=self.referencePoint, radius=self.xRelation, color=color, width=width)
         return
 
+    def get_radius(self):
+        return self.xRelation
+
     def ball_init(self, x_lim, y_lim):
         ''' define start position, speed and radius for bubble in window '''
-        radius_limit = (10, 50)
+        radius_limit = (16, 50)
         radius = random.randint(*radius_limit)
         self.mobile_object_init()
+        self.set_radius(radius)
+        self.ball_reset_position(x_lim, y_lim)
+        self.set_lifetime(random.randint(20, 50))
+
+    def set_radius(self, radius):
         self.xRelation = radius
         self.yRelation = radius
         self.xDimension = radius * 2
         self.yDimension = self.xDimension
-        self.ball_reset_position(x_lim, y_lim)
-        self.set_lifetime(random.randint(10, 30))
-        return
 
     def ball_reset_position(self, x_lim, y_lim):
         wall_thickness = 5
@@ -461,7 +490,7 @@ class Ball(MobileObject):
 x_resolution, y_resolution = 1600, 950
 
 window = Screen(x_size=x_resolution, y_size=y_resolution)
-window.screen_init(balls=30, blocks=8, wallWidth=4)
+window.screen_init(balls=48, blocks=6, wallWidth=4)
 
 while not sd.user_want_exit():
     window.do()
