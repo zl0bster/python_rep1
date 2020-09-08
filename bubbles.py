@@ -88,13 +88,18 @@ class Screen:
                     if mobObj.was_contact() == 0:
                         mobObjectChangeSpeed(item=mobObj, normalVector=normalVector)
                         mobObj.set_contact()
+                        if mobObj.is_to_remove_now():
+                            mobObj.ball_init(x_resolution, y_resolution)
+                        if statObj.is_to_remove_now():
+                            statObj.block_init(x_resolution, y_resolution)
+
                 else:
                     mobObj.lost_contact()
                 if mobObj.was_contact() > 2:
                     mobObjectDispersion(mobObj, normalVector)
                     # mobObjectChangeSpeed(item=mobObj, normalVector=normalVector)
                 if mobObj.is_inside(statObj):
-                    mobObj.ball_reset_position(x_resolution,y_resolution)
+                    mobObj.ball_reset_position(x_resolution, y_resolution)
         for i in range(0, len(self.mobile_objects) - 1):
             for j in range(i + 1, len(self.mobile_objects)):
                 mobObj1 = self.mobile_objects[i]
@@ -172,6 +177,8 @@ class ScreenObject:
         self.yDimension = dimensions[1]
         self.color = sd.COLOR_YELLOW
         self.width = 1
+        self.isRemovable = False
+        self.tillRemove = 10
         return
 
     def draw_item(self):
@@ -224,6 +231,26 @@ class ScreenObject:
         x_own, y_own = self.get_position()
         (x1, y1), (x2, y2) = screenItem.get_limits()
         return (x1 < x_own < x2) and (y1 < y_own < y2)
+
+    def is_removable(self):
+        return self.isRemovable
+
+    def is_to_remove_now(self):
+        if self.isRemovable:
+            if self.tillRemove < 6:
+                self.set_color(sd.COLOR_RED)
+                self.set_width(3)
+            if self.tillRemove < 1:
+                return True
+            else:
+                self.tillRemove -= 1
+                if self.tillRemove <= 1:
+                    return True
+        return False
+
+    def set_lifetime(self, x=10):
+        self.isRemovable = True
+        self.tillRemove = x
 
 
 class MobileObject(ScreenObject):
@@ -341,7 +368,7 @@ class MobileObject(ScreenObject):
         return
 
     def mobile_object_init(self):
-        speed_limit = (int(window.x_resolution * 0.003), int(window.x_resolution * 0.007))
+        speed_limit = (int(window.x_resolution * 0.005), int(window.x_resolution * 0.008))
         speed_value = random.randint(*speed_limit)  # star before list unpacks the arguments
         speed_direction = random.randint(0, 360)
         self.speedDirection = speed_direction
@@ -369,8 +396,8 @@ class Block(ScreenObject):
 
     def block_init(self, x_lim=200, y_lim=200):
         wall_thickness = 5
-        x_size = random.randint(int(x_lim * 0.05), int(x_lim * 0.4))
-        y_size = random.randint(int(y_lim * 0.05), int(y_lim * 0.4))
+        x_size = random.randint(int(x_lim * 0.05), int(x_lim * 0.3))
+        y_size = random.randint(int(y_lim * 0.05), int(y_lim * 0.3))
         x0 = wall_thickness
         x_max = x_lim - x_size - wall_thickness
         y0 = x0
@@ -379,6 +406,7 @@ class Block(ScreenObject):
         self.xDimension = x_size
         self.yDimension = y_size
         self.init_points()
+        self.set_lifetime(random.randint(10, 100))
         return
 
 
@@ -395,7 +423,7 @@ class Ball(MobileObject):
         self.referencePoint = sd.get_point(x=self.xPosition, y=self.yPosition)
         if self.wasContactBefore > 0:
             color = sd.COLOR_RED
-            width = 10
+            width = 5
         else:
             color = self.color
             width = self.width
@@ -404,7 +432,7 @@ class Ball(MobileObject):
 
     def ball_init(self, x_lim, y_lim):
         ''' define start position, speed and radius for bubble in window '''
-        radius_limit = (25, 50)
+        radius_limit = (10, 50)
         radius = random.randint(*radius_limit)
         self.mobile_object_init()
         self.xRelation = radius
@@ -412,6 +440,7 @@ class Ball(MobileObject):
         self.xDimension = radius * 2
         self.yDimension = self.xDimension
         self.ball_reset_position(x_lim, y_lim)
+        self.set_lifetime(random.randint(10, 30))
         return
 
     def ball_reset_position(self, x_lim, y_lim):
@@ -432,7 +461,7 @@ class Ball(MobileObject):
 x_resolution, y_resolution = 1600, 950
 
 window = Screen(x_size=x_resolution, y_size=y_resolution)
-window.screen_init(balls=20, blocks=3, wallWidth=4)
+window.screen_init(balls=30, blocks=8, wallWidth=4)
 
 while not sd.user_want_exit():
     window.do()
