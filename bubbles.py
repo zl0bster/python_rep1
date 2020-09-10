@@ -125,6 +125,13 @@ class Screen:
 
         return
 
+    def check_mobile_items_in_window(self):
+        for mobObj in window.mobile_objects:
+            if mobObj.is_out_of_window:
+                if mobObj is Ball:
+                    mobObj.ball_init()
+                    print(" Runaway ball is returned")
+
     def draw_items(self):
         sd.start_drawing()  # removes  blinking
         for statObj in self.static_objects:
@@ -132,7 +139,7 @@ class Screen:
         for dinObj in self.mobile_objects:
             dinObj.draw_item()
         sd.finish_drawing()  # removes  blinking
-        sd.sleep(0.08)
+        sd.sleep(0.06)
         sd.draw_background()
 
     # def __del__(self):
@@ -142,29 +149,31 @@ class Screen:
         self.draw_items()
         self.manage_mobile_items_collisions()
         self.move_mobile_items()
+        self.check_mobile_items_in_window()
         [cursorPos, mouseState] = sd.get_mouse_state()
         if mouseState[2] != 0:
             self.export_mobile_items()
 
     def screen_init(self, balls=3, blocks=1, wallWidth=3):
-        x_resolution = self.x_resolution
-        y_resolution = self.y_resolution
-        wallBlocks = [[(0, 0), (wallWidth, y_resolution - 1)],
-                      [(wallWidth, 0), (x_resolution - wallWidth, wallWidth)],
-                      [(x_resolution - 1 - wallWidth, 0), (x_resolution - 1, y_resolution - 1)],
-                      [(wallWidth, y_resolution - 1 - wallWidth), (x_resolution - wallWidth, y_resolution - 1)]]
+        x_lim, y_lim = self.get_resolution()
+        wallBlocks = [[(0, 0), (wallWidth, y_lim - 1)],
+                      [(wallWidth, 0), (x_lim - wallWidth, wallWidth)],
+                      [(x_lim - 1 - wallWidth, 0), (x_lim - 1, y_lim - 1)],
+                      [(wallWidth, y_lim - 1 - wallWidth), (x_lim - wallWidth, y_lim - 1)]]
         for wall in wallBlocks:
             self.add_stationary_item(Block(wall[0], wall[1]))
             print('wall block', id(wall), 'added')
+        for wallBlock in self.static_objects:
+            wallBlock.set_width(2)
         while blocks > 0:
             block1 = Block()
-            block1.block_init(x_resolution, y_resolution)
+            block1.block_init(x_lim, y_lim)
             self.add_stationary_item(block1)
             print('block', blocks, 'added')
             blocks -= 1
         while balls > 0:
             ball1 = Ball()
-            ball1.ball_init(x_resolution, y_resolution)
+            ball1.ball_init(x_lim, y_lim)
             self.add_mobile_item(ball1)
             print('balls', balls, 'added')
             balls -= 1
@@ -173,6 +182,12 @@ class Screen:
         for item in self.static_objects:
             if not item is ignore:
                 yield item
+
+    def get_resolution(self):
+        return x_resolution, y_resolution
+
+    def get_max_coordinate(self):
+        return max(x_resolution, y_resolution)
 
 
 class ScreenObject:
@@ -382,12 +397,18 @@ class MobileObject(ScreenObject):
         return
 
     def mobile_object_init(self):
-        speed_limit = (int(window.x_resolution * 0.005), int(window.x_resolution * 0.008))
+        x = window.get_max_coordinate()
+        speed_limit = (int(x * 0.005), int(x * 0.008))
         speed_value = random.randint(*speed_limit)  # star before list unpacks the arguments
         speed_direction = random.randint(0, 360)
         self.speedDirection = speed_direction
         self.speedValue = speed_value
         return
+
+    def is_out_of_window(self, window: Screen):
+        pos = abs(max(self.get_position()))
+        lim = window.get_max_coordinate()
+        return lim < pos
 
 
 class Block(ScreenObject):
@@ -416,10 +437,10 @@ class Block(ScreenObject):
         y0 = x0
         y_max = y_lim - y_size - wall_thickness
         self.set_lifetime(random.randint(10, 100))
-        intersected = True
+        # intersected = True
         self.xDimension = x_size
         self.yDimension = y_size
-        i = 0
+        # i = 0
         self.screen_object_init(x0=x0, y0=y0, x_lim=x_max, y_lim=y_max)
         # while intersected:
         #     i += 1
