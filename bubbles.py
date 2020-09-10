@@ -89,6 +89,8 @@ class Screen:
                         mobObjectChangeSpeed(item=mobObj, normalVector=normalVector)
                         mobObj.set_contact()
                         if mobObj.is_to_remove_now():
+                            x, y = mobObj.get_position()
+                            sd.snowflake(sd.get_point(x, y), 40)
                             mobObj.ball_init(x_resolution, y_resolution)
                         if statObj.is_to_remove_now():
                             statObj.block_init(x_resolution, y_resolution)
@@ -184,7 +186,7 @@ class Screen:
                 yield item
 
     def get_resolution(self):
-        return x_resolution, y_resolution
+        return int(x_resolution), int(y_resolution)
 
     def get_max_coordinate(self):
         return max(x_resolution, y_resolution)
@@ -406,7 +408,8 @@ class MobileObject(ScreenObject):
         return
 
     def is_out_of_window(self, window: Screen):
-        pos = abs(max(self.get_position()))
+        x, y = self.get_position()
+        pos = (max(abs(x), abs(y)))
         lim = window.get_max_coordinate()
         return lim < pos
 
