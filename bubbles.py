@@ -73,7 +73,9 @@ class Screen:
             print(f"log file {logFileName} is closed")
 
     def manage_mobile_items_collisions(self):
-        def mobObjectChangeSpeed(item: MobileObject, normalVector):
+        impulseCoef = 1.00
+
+        def mobObjectChangeSpeedDirection(item: MobileObject, normalVector):
             [speedValue, direction] = item.get_speed()
             direction = tda.reflectance_angle(normalToSurface=normalVector, angle=direction)
             item.set_contact()
@@ -83,17 +85,26 @@ class Screen:
             [speedValue, direction] = item.get_speed()
             item.set_speed(value=speedValue, direction=normalVector)
 
+        def mobObjectChangeSpeedValue(item1: MobileObject, item2: MobileObject):
+            item1SpeedVal, item1SpeedDir = item1.get_speed()
+            item1Radius = item1.xRelation
+            item2SpeedVal, item2SpeedDir = item2.get_speed()
+            item2Radius = item2.xRelation
+            item1NewSpeed = int(item2Radius / item1Radius * item2SpeedVal * impulseCoef)
+            item2NewSpeed = int(item1Radius / item2Radius * item1SpeedVal * impulseCoef)
+            item1.set_speed(item1NewSpeed, item1SpeedDir)
+            item2.set_speed(item2NewSpeed, item2SpeedDir)
+
         for statObj in self.static_objects:
             for mobObj in self.mobile_objects:
                 [isContact, normalVector] = mobObj.check_contact(statObj)
                 if isContact:
                     if mobObj.was_contact() == 0:
-                        mobObjectChangeSpeed(item=mobObj, normalVector=normalVector)
+                        mobObjectChangeSpeedDirection(item=mobObj, normalVector=normalVector)
+                        mobObj.speedValue = int(mobObj.speedValue * 1.2)
                         mobObj.set_contact()
                         if mobObj.is_to_remove_now():
-                            x, y = mobObj.get_position()
-                            sd.snowflake(sd.get_point(x, y), 40)
-                            mobObj.ball_init(x_resolution, y_resolution)
+                            mobObj.die()
                         if statObj.is_to_remove_now():
                             statObj.block_init(x_resolution, y_resolution)
                 else:
@@ -109,16 +120,18 @@ class Screen:
                 mobObj2 = self.mobile_objects[j]
                 [isContact, normalVector] = mobObj1.check_contact(mobObj2)
                 if isContact:
+                    if mobObj1.was_contact() == 0 and mobObj2.was_contact() == 0:
+                        mobObjectChangeSpeedValue(mobObj1, mobObj2)
                     if mobObj1.was_contact() == 0:
-                        mobObjectChangeSpeed(item=mobObj1, normalVector=normalVector)
+                        mobObjectChangeSpeedDirection(item=mobObj1, normalVector=normalVector)
                         mobObj1.set_contact()
                         if mobObj1.is_to_remove_now():
-                            mobObj1.ball_init(x_resolution, y_resolution)
+                            mobObj1.die()
                     if mobObj2.was_contact() == 0:
-                        mobObjectChangeSpeed(item=mobObj2, normalVector=normalVector)
+                        mobObjectChangeSpeedDirection(item=mobObj2, normalVector=normalVector)
                         mobObj2.set_contact()
                         if mobObj2.is_to_remove_now():
-                            mobObj2.ball_init(x_resolution, y_resolution)
+                            mobObj2.die()
                 else:
                     mobObj1.lost_contact()
                     mobObj2.lost_contact()
@@ -127,15 +140,20 @@ class Screen:
                 if mobObj2.was_contact() > 1:
                     mobObjectDispersion(mobObj2, normalVector + 270)
 
-        return
-
     def check_mobile_items_in_window(self):
-        for mobObj in window.mobile_objects:
-            if mobObj.is_out_of_window(window):
-                if mobObj is Ball:
-                    x, y = window.get_resolution()
+        for mobObj in self.mobile_objects:
+            if mobObj.is_out_of_window(self):
+                # if mobObj is Ball:
+                if type(mobObj) == Ball:
+                    x, y = self.get_resolution()
                     mobObj.ball_init(x, y)
-                    print(" Runaway ball is returned")
+                    print(" Runaway ball is returned ")
+
+    def check_mobile_item_is_immovable(self):
+        for mobObj in self.mobile_objects:
+            if mobObj.is_immovable():
+                mobObj.die()
+                print(" Stopped ball is initialized ")
 
     def draw_items(self):
         sd.start_drawing()  # removes  blinking
@@ -155,6 +173,7 @@ class Screen:
         self.manage_mobile_items_collisions()
         self.move_mobile_items()
         self.check_mobile_items_in_window()
+        self.check_mobile_item_is_immovable()
         [cursorPos, mouseState] = sd.get_mouse_state()
         if mouseState[2] != 0:
             self.export_mobile_items()
@@ -285,13 +304,14 @@ class ScreenObject:
                 # self.set_width(3)
                 if type(self) is Ball:
                     self.set_radius(int(0.9 * self.get_radius()))
+                    if self.get_radius() < 5:
+                        self.set_radius(5)
+                    self.speedValue = int(self.speedValue / 0.9)
                     self.set_width(int(0.1 * self.get_radius()))
             if self.tillRemove < 1:
                 return True
             else:
                 self.tillRemove -= 1
-                # if self.tillRemove <= 1:
-                #     return True
         return False
 
     def set_lifetime(self, x=10):
@@ -417,6 +437,12 @@ class MobileObject(ScreenObject):
         self.yPosition += y
         return
 
+    def die(self):
+        x, y = self.get_position()
+        sd.snowflake(sd.get_point(x, y), 40)
+        # x,y =
+        self.ball_init(*window.get_resolution())
+
     def mobile_object_init(self):
         x = window.get_max_coordinate()
         speed_limit = (int(x * 0.005), int(x * 0.008))
@@ -429,8 +455,11 @@ class MobileObject(ScreenObject):
         x, y = self.get_position()
         pos = (max(abs(x), abs(y)))
         lim = window.get_max_coordinate()
-        # print(x, y, pos, lim)
         return lim < pos
+
+    def is_immovable(self):
+        if self.speedValue < 1:
+            return self.is_to_remove_now()
 
 
 class Block(ScreenObject):
@@ -520,6 +549,7 @@ class Ball(MobileObject):
         y0 = x0
         y_max = y_lim - self.xRelation - self.speedValue - wall_thickness
         self.screen_object_init(x0=x0, y0=y0, x_lim=x_max, y_lim=y_max)
+        self.mobile_object_init()
         return
 
 
