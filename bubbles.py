@@ -1,7 +1,9 @@
 import random
 import time
+from operator import itemgetter
 
 import simple_draw as sd
+import split as split
 from win32api import GetSystemMetrics
 
 import fractal_tree_draw as fd
@@ -129,9 +131,10 @@ class Screen:
 
     def check_mobile_items_in_window(self):
         for mobObj in window.mobile_objects:
-            if mobObj.is_out_of_window:
+            if mobObj.is_out_of_window(window):
                 if mobObj is Ball:
-                    mobObj.ball_init()
+                    x, y = window.get_resolution()
+                    mobObj.ball_init(x, y)
                     print(" Runaway ball is returned")
 
     def draw_items(self):
@@ -185,6 +188,11 @@ class Screen:
             if not item is ignore:
                 yield item
 
+    def mob_items_issue(self, ignore=None):
+        for item in self.mobile_objects:
+            if not item is ignore:
+                yield item
+
     def get_resolution(self):
         return int(x_resolution), int(y_resolution)
 
@@ -197,17 +205,30 @@ class ScreenObject:
     can be drawn with defined color and width"""
 
     def __init__(self, reference: list, relation: list, dimensions: list):
-        self.xPosition = reference[0]
-        self.yPosition = reference[1]
+        self.set_position(reference)
+        self.set_dimensions(relation, dimensions)
+        self.set_color(sd.COLOR_YELLOW)
+        self.set_width(1)
+        self.isRemovable = False
+        self.tillRemove = 10
+
+    def set_dimensions(self, relation: list, dimensions: list):
         self.xRelation = relation[0]
         self.yRelation = relation[1]
         self.xDimension = dimensions[0]
         self.yDimension = dimensions[1]
-        self.color = sd.COLOR_YELLOW
-        self.width = 1
-        self.isRemovable = False
-        self.tillRemove = 10
-        return
+
+    def set_position(self, reference: list):
+        self.xPosition = reference[0]
+        self.yPosition = reference[1]
+
+    def set_color(self, color=sd.COLOR_YELLOW):
+        if color:
+            self.color = color
+
+    def set_width(self, width=None):
+        if width:
+            self.width = width
 
     def draw_item(self):
         pass
@@ -233,27 +254,21 @@ class ScreenObject:
         point2 = [point1[0] + self.xDimension, point1[1] + self.yDimension]
         return point1, point2
 
-    def set_color(self, color=sd.COLOR_YELLOW):
-        if color:
-            self.color = color
-
-    def set_width(self, width=None):
-        if width:
-            self.width = width
-
-    def screen_object_init(self, x0=0, y0=0, x_lim=200, y_lim=200):
+    def get_random_color(self):
         palette = [sd.COLOR_YELLOW,
                    sd.COLOR_PURPLE,
                    sd.COLOR_CYAN,
                    sd.COLOR_GREEN]
         color_count = len(palette) - 1
         color = palette[random.randint(0, color_count)]
+        return color
+
+    def screen_object_init(self, x0=0, y0=0, x_lim=200, y_lim=200):
         x = random.randint(x0, x_lim)
         y = random.randint(y0, y_lim)
-        self.xPosition = x
-        self.yPosition = y
-        self.color = color
-        self.width = 2
+        self.set_position(reference=[x, y])
+        self.set_color(self.get_random_color())
+        self.set_width(2)
 
     def is_inside(self, screenItem):
         x_own, y_own = self.get_position()
@@ -267,7 +282,7 @@ class ScreenObject:
         if self.isRemovable:
             if self.tillRemove < 10:
                 self.set_color(sd.COLOR_RED)
-                self.set_width(3)
+                # self.set_width(3)
                 if type(self) is Ball:
                     self.set_radius(int(0.9 * self.get_radius()))
                     self.set_width(int(0.1 * self.get_radius()))
@@ -275,8 +290,8 @@ class ScreenObject:
                 return True
             else:
                 self.tillRemove -= 1
-                if self.tillRemove <= 1:
-                    return True
+                # if self.tillRemove <= 1:
+                #     return True
         return False
 
     def set_lifetime(self, x=10):
@@ -290,8 +305,7 @@ class MobileObject(ScreenObject):
 
     def __init__(self, reference: list, relation: list, dimensions: list):
         super().__init__(reference, relation, dimensions)
-        self.speedValue = 0
-        self.speedDirection = 0
+        self.set_speed(value=0, direction=0)
         self.wasContactBefore = 0
 
     def get_speed(self) -> (int, int):
@@ -314,7 +328,12 @@ class MobileObject(ScreenObject):
         return export
 
     def import_data(self, data: str):
-        pass
+        parameters = split.data(',')
+        xPos, yPos, xRel, yRel, xDim, yDim, speedVal, speedDir, wasContactBefore = int(itemgetter(parameters))
+        self.set_position([xPos, yPos])
+        self.set_dimensions([xRel, yRel], [xDim, yDim])
+        self.set_speed(speedVal, speedDir)
+        self.wasContactBefore = wasContactBefore
 
     def lost_contact(self):
         if self.wasContactBefore > 0:
@@ -403,14 +422,14 @@ class MobileObject(ScreenObject):
         speed_limit = (int(x * 0.005), int(x * 0.008))
         speed_value = random.randint(*speed_limit)  # star before list unpacks the arguments
         speed_direction = random.randint(0, 360)
-        self.speedDirection = speed_direction
-        self.speedValue = speed_value
+        self.set_speed(speed_value, speed_direction)
         return
 
     def is_out_of_window(self, window: Screen):
         x, y = self.get_position()
         pos = (max(abs(x), abs(y)))
         lim = window.get_max_coordinate()
+        # print(x, y, pos, lim)
         return lim < pos
 
 
@@ -440,16 +459,14 @@ class Block(ScreenObject):
         y0 = x0
         y_max = y_lim - y_size - wall_thickness
         self.set_lifetime(random.randint(10, 100))
-        # intersected = True
-        self.xDimension = x_size
-        self.yDimension = y_size
-        # i = 0
+        self.set_dimensions(relation=[0, 0], dimensions=[x_size, y_size])
         self.screen_object_init(x0=x0, y0=y0, x_lim=x_max, y_lim=y_max)
+        # i = 0
+        # intersected = True
         # while intersected:
         #     i += 1
         #     j = 0
         #     self.screen_object_init(x0=x0, y0=y0, x_lim=x_max, y_lim=y_max)
-        #
         #     for item in window.static_objects:
         #         j += 1
         #         if id(self) != id(item):
