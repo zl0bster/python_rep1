@@ -21,6 +21,7 @@ class Screen:
         self.y_resolution = y_size if y_size < height else height
         self.mobile_objects = []
         self.static_objects = []
+        self.lastObjectId = 0
         # self.contacting_items = {}
         sd.resolution = (self.x_resolution, self.y_resolution)
         # self.draw_screen_background()
@@ -90,8 +91,8 @@ class Screen:
             item1Radius = item1.xRelation
             item2SpeedVal, item2SpeedDir = item2.get_speed()
             item2Radius = item2.xRelation
-            item1NewSpeed = int(item2Radius / item1Radius * item2SpeedVal * impulseCoef)
-            item2NewSpeed = int(item1Radius / item2Radius * item1SpeedVal * impulseCoef)
+            item1NewSpeed = max(int(round(item2Radius / item1Radius * item2SpeedVal * impulseCoef)), 2)
+            item2NewSpeed = max(int(round(item1Radius / item2Radius * item1SpeedVal * impulseCoef)), 2)
             item1.set_speed(item1NewSpeed, item1SpeedDir)
             item2.set_speed(item2NewSpeed, item2SpeedDir)
 
@@ -101,7 +102,7 @@ class Screen:
                 if isContact:
                     if mobObj.was_contact() == 0:
                         mobObjectChangeSpeedDirection(item=mobObj, normalVector=normalVector)
-                        mobObj.speedValue = int(mobObj.speedValue * 1.2)
+                        mobObj.speedValue = int(round(mobObj.speedValue * 1.02))
                         mobObj.set_contact()
                         if mobObj.is_to_remove_now():
                             mobObj.die()
@@ -218,10 +219,17 @@ class Screen:
     def get_max_coordinate(self):
         return max(x_resolution, y_resolution)
 
+    def get_object_id(self):
+        self.lastObjectId += 1
+        return self.lastObjectId
+
 
 class ScreenObject:
     """ Has initial point coordinates, reference of own center and dimensions
     can be drawn with defined color and width"""
+    BallType = 10
+    BlockType = 20
+    WallType = 30
 
     def __init__(self, reference: list, relation: list, dimensions: list):
         self.set_position(reference)
@@ -230,6 +238,8 @@ class ScreenObject:
         self.set_width(1)
         self.isRemovable = False
         self.tillRemove = 10
+        self.objectId = window.get_object_id()
+        self.objectType = 0
 
     def set_dimensions(self, relation: list, dimensions: list):
         self.xRelation = relation[0]
@@ -281,6 +291,12 @@ class ScreenObject:
         color_count = len(palette) - 1
         color = palette[random.randint(0, color_count)]
         return color
+
+    def get_obj_type(self):
+        return self.objectType
+
+    def get_obj_id(self):
+        return self.objectId
 
     def screen_object_init(self, x0=0, y0=0, x_lim=200, y_lim=200):
         x = random.randint(x0, x_lim)
