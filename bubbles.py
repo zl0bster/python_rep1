@@ -190,6 +190,7 @@ class Screen:
             print('wall block', id(wall), 'added')
         for wallBlock in self.static_objects:
             wallBlock.set_width(2)
+            wallBlock.set_obj_type(wallBlock.WALLTYPE)
         while blocks > 0:
             block1 = Block()
             block1.block_init(x_lim, y_lim)
@@ -227,9 +228,9 @@ class Screen:
 class ScreenObject:
     """ Has initial point coordinates, reference of own center and dimensions
     can be drawn with defined color and width"""
-    BallType = 10
-    BlockType = 20
-    WallType = 30
+    BALLTYPE = 10
+    BLOCKTYPE = 20
+    WALLTYPE = 30
 
     def __init__(self, reference: list, relation: list, dimensions: list):
         self.set_position(reference)
@@ -258,6 +259,9 @@ class ScreenObject:
     def set_width(self, width=None):
         if width:
             self.width = width
+
+    def set_obj_type(self, objType: int):
+        self.objectType = objType
 
     def draw_item(self):
         pass
@@ -456,7 +460,6 @@ class MobileObject(ScreenObject):
     def die(self):
         x, y = self.get_position()
         sd.snowflake(sd.get_point(x, y), 40)
-        # x,y =
         self.ball_init(*window.get_resolution())
 
     def mobile_object_init(self):
@@ -485,7 +488,7 @@ class Block(ScreenObject):
         relation = [0, 0]
         super().__init__(reference, relation, dimensions)
         self.init_points()
-        return
+        self.set_obj_type(self.BLOCKTYPE)
 
     def draw_item(self):
         sd.rectangle(left_bottom=self.referencePoint, right_top=self.oppositePoint, color=self.color,
@@ -506,17 +509,6 @@ class Block(ScreenObject):
         self.set_lifetime(random.randint(10, 100))
         self.set_dimensions(relation=[0, 0], dimensions=[x_size, y_size])
         self.screen_object_init(x0=x0, y0=y0, x_lim=x_max, y_lim=y_max)
-        # i = 0
-        # intersected = True
-        # while intersected:
-        #     i += 1
-        #     j = 0
-        #     self.screen_object_init(x0=x0, y0=y0, x_lim=x_max, y_lim=y_max)
-        #     for item in window.static_objects:
-        #         j += 1
-        #         if id(self) != id(item):
-        #             print('iteration ', i, j, intersected)
-        #             intersected = intersected or item.is_inside(self)
         self.init_points()
 
 
@@ -527,7 +519,7 @@ class Ball(MobileObject):
         relation = [radius, radius]
         dimensions = [radius * 2, radius * 2]
         super().__init__(reference, relation, dimensions)
-        return
+        self.set_obj_type(self.BALLTYPE)
 
     def draw_item(self):
         self.referencePoint = sd.get_point(x=self.xPosition, y=self.yPosition)
@@ -551,6 +543,7 @@ class Ball(MobileObject):
         self.set_radius(radius)
         self.ball_reset_position(x_lim, y_lim)
         self.set_lifetime(random.randint(20, 50))
+        print(f"Ball {self.get_obj_id()} initialized")
 
     def set_radius(self, radius):
         self.xRelation = radius
